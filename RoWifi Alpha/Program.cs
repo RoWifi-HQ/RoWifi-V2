@@ -1,4 +1,5 @@
 ﻿using Discord;
+using Discord.Addons.Interactive;
 using Discord.Commands;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
@@ -22,7 +23,7 @@ namespace RoWifi_Alpha
                 client.Log += LogAsync;
                 services.GetRequiredService<CommandService>().Log += LogAsync;
 
-                await client.LoginAsync(TokenType.Bot, "");
+                await client.LoginAsync(TokenType.Bot, Environment.GetEnvironmentVariable("DiscToken"));
                 await client.StartAsync();
 
                 await services.GetRequiredService<CommandHandler>().InitializeAsync();
@@ -38,12 +39,15 @@ namespace RoWifi_Alpha
 
         private ServiceProvider ConfigureServices()
         {
-            return new ServiceCollection()
+            var services = new ServiceCollection()
                 .AddSingleton<DiscordSocketClient>()
                 .AddSingleton<CommandService>()
                 .AddSingleton<CommandHandler>()
                 .AddSingleton<HttpClient>()
-                .BuildServiceProvider();
+                .AddSingleton<InteractiveService>()
+                .AddSingleton<DatabaseService>();
+            services.AddHttpClient<RobloxService>();
+            return services.BuildServiceProvider();
         }
     }
 }
