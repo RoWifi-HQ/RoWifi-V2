@@ -47,6 +47,7 @@ namespace RoWifi_Alpha
                 .AddSingleton<InteractiveService>()
                 .AddSingleton<DatabaseService>();
             services.AddHttpClient<RobloxService>();
+            services.AddMemoryCache();
             return services.BuildServiceProvider();
         }
     }

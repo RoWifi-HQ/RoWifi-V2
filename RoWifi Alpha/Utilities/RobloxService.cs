@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json.Linq;
+using RoWifi_Alpha.Exceptions;
 using System;
 using System.Collections.Generic;
 using System.Net.Http;
@@ -15,7 +16,7 @@ namespace RoWifi_Alpha.Utilities
         {
             _client = client;
         }
-
+        
         public async Task<int?> GetIdFromUsername(string Username)
         {
             try
@@ -25,9 +26,9 @@ namespace RoWifi_Alpha.Utilities
                 JObject obj = JObject.Parse(res);
                 return (int?)obj["Id"];
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                throw;
+                throw new RobloxException(e.Message);
             }
         }
 
@@ -40,9 +41,47 @@ namespace RoWifi_Alpha.Utilities
                 bool IsPresent = res.Contains(code, StringComparison.OrdinalIgnoreCase);
                 return IsPresent;
             }
-            catch (Exception)
+            catch (Exception e)
             {
-                throw;
+                throw new RobloxException(e.Message);
+            }
+        }
+
+        public async Task<Dictionary<int, int>> GetUserRoles(int RobloxId)
+        {
+            try
+            {
+                HttpResponseMessage response = await _client.GetAsync(new Uri($"https://groups.roblox.com/v2/users/{RobloxId}/groups/roles"));
+                response.EnsureSuccessStatusCode();
+                string result = await response.Content.ReadAsStringAsync();
+                JObject obj = JObject.Parse(result);
+                Dictionary<int, int> roleIds = new Dictionary<int, int>();
+                foreach (var group in obj["data"])
+                {
+                    int role = (int)group["role"]["rank"];
+                    int groupId = (int)group["group"]["id"];
+                    roleIds.Add(groupId, role);
+                }
+                return roleIds;
+            }
+            catch(Exception e)
+            {
+                throw new RobloxException(e.Message);
+            }
+        }
+
+        public async Task<string> GetUsernameFromId(int RobloxId)
+        {
+            try
+            {
+                HttpResponseMessage response = await _client.GetAsync(new Uri($"https://api.roblox.com/users/{RobloxId}"));
+                string result = response.Content.ReadAsStringAsync().Result;
+                JObject obj = JObject.Parse(result);
+                return (string)obj["Username"];
+            }
+            catch(Exception e)
+            {
+                throw new RobloxException(e.Message);
             }
         }
     }

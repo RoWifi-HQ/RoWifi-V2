@@ -32,7 +32,7 @@ namespace RoWifi_Alpha.Utilities
         private async Task HandleCommandAsync(SocketMessage rawMessage)
         {
             if (!(rawMessage is SocketUserMessage message)) return;
-
+            //Add Disabled Channel and Blacklisted Users Handling
             int argPos = 0;
             if (!(message.HasCharPrefix('?', ref argPos) || message.HasMentionPrefix(_client.CurrentUser, ref argPos)) || message.Author.IsBot)
                 return;
@@ -47,7 +47,7 @@ namespace RoWifi_Alpha.Utilities
             {
                 case RoWifiResult res:
                     if (res.Error != null)
-                        await context.Channel.SendMessageAsync(res.Reason);
+                        await context.Channel.SendMessageAsync(embed: res.embed);
                     break;
                 default:
                     if (!string.IsNullOrEmpty(result.ErrorReason))
