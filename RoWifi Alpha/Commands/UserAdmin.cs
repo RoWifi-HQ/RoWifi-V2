@@ -11,7 +11,7 @@ using RoWifi_Alpha.Criterion;
 using RoWifi_Alpha.Exceptions;
 using RoWifi_Alpha.Models;
 using RoWifi_Alpha.Utilities;
-//TODO: Check below
+
 namespace RoWifi_Alpha.Commands
 {
     public class UserAdmin : InteractiveBase<SocketCommandContext>
@@ -69,6 +69,63 @@ namespace RoWifi_Alpha.Commands
             {
                 RoUser newUser = new RoUser { DiscordId = Context.User.Id, RobloxId = RobloxId.Value };
                 await Database.AddUser(newUser);
+                return RoWifiResult.FromSuccess("Verification Successful", "To get your roles, run `update`. To change your linked Roblox Account, use `reverify`");
+            }
+            else
+                return RoWifiResult.FromError("Verification Failed", $"`{Code}` was not found in the profile. Please try again.");
+        }
+
+        [Command("reverify"), RequireContext(ContextType.Guild)]
+        [Summary("Command to change linked Roblox Account")]
+        public async Task<RuntimeResult> ReverifyAsync(string RobloxName = "")
+        {
+            RoUser user = await Database.GetUserAsync(Context.User.Id);
+            if (user != null)
+                return RoWifiResult.FromError("User Not Verified", "To verify your account, use `verify`");
+
+            if (RobloxName.Length == 0)
+            {
+                await ReplyAsync("Enter your Roblox Name.\nSay `cancel` if you wish to cancel this command");
+                SocketMessage response = await NextMessageAsync(new EnsureSourceUserCriterion());
+                if (response == null)
+                    return RoWifiResult.FromError("Verification Failed", "Command timed out. Please try again");
+                RobloxName = response.Content;
+            }
+
+            int? RobloxId;
+            try
+            {
+                RobloxId = await Roblox.GetIdFromUsername(RobloxName);
+                if (RobloxId == null)
+                    return RoWifiResult.FromError("Verification Failed", "Invalid Roblox Username. Please try again");
+            }
+            catch (Exception) { return RoWifiResult.FromRobloxError("Verification Failed"); }
+
+            string Code = Miscellanous.GenerateCode();
+            EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
+            embed.AddField("Verification Process", "Enter the following code in your Roblox status/description")
+                .AddField("Code", Code)
+                .AddField("Further Instructions", "After doing so, reply to me saying 'done'.");
+            await ReplyAsync(embed: embed.Build());
+
+            var criterion = new Criteria<SocketMessage>()
+                .AddCriterion(new EnsureSourceUserCriterion())
+                .AddCriterion(new EnsureContentCriterion("done", "cancel"));
+            SocketMessage response2 = await NextMessageAsync(criterion, TimeSpan.FromMinutes(5));
+            if (response2 == null)
+                return RoWifiResult.FromError("Verification Failed", "Command timed out. Please try again");
+
+            bool Present;
+            try
+            {
+                Present = await Roblox.CheckCode(RobloxId.Value, Code);
+            }
+            catch (Exception) { return RoWifiResult.FromRobloxError("Verification Failed"); }
+
+            if (Present)
+            {
+                RoUser newUser = new RoUser { DiscordId = Context.User.Id, RobloxId = RobloxId.Value };
+                await Database.AddUser(newUser, false);
                 return RoWifiResult.FromSuccess("Verification Successful", "To get your roles, run `update`. To change your linked Roblox Account, use `reverify`");
             }
             else
