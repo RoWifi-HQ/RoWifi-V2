@@ -1,4 +1,6 @@
-﻿namespace RoWifi_Alpha.Models
+﻿using MongoDB.Bson.Serialization.Attributes;
+
+namespace RoWifi_Alpha.Models
 {
     public class RankBind
     {
@@ -23,5 +25,19 @@
         public string Prefix { get; set; }
         public int Priority { get; set; }
         public ulong[] DiscordRoles { get; set; }
+
+        [BsonIgnore]
+        public RoCommand Cmd;
+
+        [BsonConstructor]
+        public CustomBind(int Id, string Code, string Prefix, int Priority, ulong[] DiscordRoles)
+        {
+            this.Id = Id;
+            this.Code = Code;
+            this.Prefix = Prefix;
+            this.Priority = Priority;
+            this.DiscordRoles = DiscordRoles;
+            this.Cmd = new RoCommand(Code);
+        }
     }
 }

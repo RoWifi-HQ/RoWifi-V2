@@ -44,7 +44,12 @@ namespace RoWifi_Alpha.Models
 
             if(guild.CustomBinds != null)
             {
-                //Implement later
+                foreach (CustomBind bind in guild.CustomBinds)
+                {
+                    bool Success = bind.Cmd.Evaluate(this, userRoleIds);
+                    if (Success)
+                        CustomBindsToAdd.Add(bind);
+                }
             }
 
             (List<ulong> AddedRoles, List<ulong> RemovedRoles) = await UpdateBindRolesAsync(member, server, guild, RankBindsToAdd, GroupBindsToAdd, CustomBindsToAdd, reason);
