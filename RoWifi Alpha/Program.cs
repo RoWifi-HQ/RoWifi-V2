@@ -3,6 +3,7 @@ using Discord.Addons.Interactive;
 using Discord.Commands;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
+using RoWifi_Alpha.Services;
 using RoWifi_Alpha.Utilities;
 using System;
 using System.Net.Http;
@@ -45,7 +46,8 @@ namespace RoWifi_Alpha
                 .AddSingleton<CommandHandler>()
                 .AddSingleton<HttpClient>()
                 .AddSingleton<InteractiveService>()
-                .AddSingleton<DatabaseService>();
+                .AddSingleton<DatabaseService>()
+                .AddSingleton<LoggerService>();
             services.AddHttpClient<RobloxService>();
             services.AddMemoryCache();
             return services.BuildServiceProvider();

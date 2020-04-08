@@ -10,6 +10,7 @@ using Discord.WebSocket;
 using RoWifi_Alpha.Criterion;
 using RoWifi_Alpha.Exceptions;
 using RoWifi_Alpha.Models;
+using RoWifi_Alpha.Services;
 using RoWifi_Alpha.Utilities;
 
 namespace RoWifi_Alpha.Commands
@@ -18,6 +19,7 @@ namespace RoWifi_Alpha.Commands
     {
         public DatabaseService Database { get; set; }
         public RobloxService Roblox { get; set; }
+        public LoggerService Logger { get; set; }
 
         [Command("verify", RunMode = RunMode.Async), RequireContext(ContextType.Guild)]
         [Summary("Command to link Roblox Account to Discord Account")]
@@ -175,6 +177,7 @@ namespace RoWifi_Alpha.Commands
 
                 embed.WithFields(fields).WithColor(Color.Green).WithTitle("Update");
                 await ReplyAsync(embed: embed.Build());
+                await Logger.LogServer(Context.Guild, embed.Build());
                 return RoWifiResult.FromSuccess();
             }
             catch(HttpException)
