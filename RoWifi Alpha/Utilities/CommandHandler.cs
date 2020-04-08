@@ -2,6 +2,7 @@
 using Discord.Commands;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
+using RoWifi_Alpha.Models;
 using System;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -13,12 +14,14 @@ namespace RoWifi_Alpha.Utilities
         private readonly DiscordSocketClient _client;
         private readonly CommandService _commands;
         private readonly IServiceProvider _services;
+        private readonly DatabaseService _database;
 
         public CommandHandler(IServiceProvider services)
         {
             _client = services.GetRequiredService<DiscordSocketClient>();
             _commands = services.GetRequiredService<CommandService>();
             _services = services;
+            _database = services.GetRequiredService<DatabaseService>();
         }
 
         public async Task InitializeAsync()
@@ -32,12 +35,20 @@ namespace RoWifi_Alpha.Utilities
         private async Task HandleCommandAsync(SocketMessage rawMessage)
         {
             if (!(rawMessage is SocketUserMessage message)) return;
-            //Add Disabled Channel and Blacklisted Users Handling
+            //Add Blacklisted Users Handling
             int argPos = 0;
             if (!(message.HasCharPrefix('?', ref argPos) || message.HasMentionPrefix(_client.CurrentUser, ref argPos)) || message.Author.IsBot)
                 return;
 
             SocketCommandContext context = new SocketCommandContext(_client, message);
+
+            if(context.Guild != null)
+            {
+                RoGuild guild = await _database.GetGuild(context.Guild.Id);
+                if (guild.DisabledChannels != null && guild.DisabledChannels.Contains(context.Channel.Id))
+                    return;
+            }
+
             await _commands.ExecuteAsync(context, argPos, _services);
         }
 
