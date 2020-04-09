@@ -2,6 +2,7 @@
 using RoWifi_Alpha.Exceptions;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
@@ -78,6 +79,22 @@ namespace RoWifi_Alpha.Utilities
                 string result = response.Content.ReadAsStringAsync().Result;
                 JObject obj = JObject.Parse(result);
                 return (string)obj["Username"];
+            }
+            catch(Exception e)
+            {
+                throw new RobloxException(e.Message);
+            }
+        }
+
+        public async Task<JToken> GetGroupRank(int GroupId, int RankId)
+        {
+            try
+            {
+                HttpResponseMessage response = await _client.GetAsync(new Uri($"https://groups.roblox.com/v1/groups/{GroupId}/roles"));
+                string res = await response.Content.ReadAsStringAsync();
+                JObject obj = JObject.Parse(res);
+                JArray ranks = (JArray)obj["roles"];
+                return ranks.Where(r => (int)r["rank"] == RankId).FirstOrDefault();
             }
             catch(Exception e)
             {

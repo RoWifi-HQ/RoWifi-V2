@@ -109,5 +109,20 @@ namespace RoWifi_Alpha.Utilities
                 throw new RoMongoException(e.Message);
             }
         }
+
+        public async Task<bool> ModifyGuild(ulong GuildId, UpdateDefinition<RoGuild> update, FilterDefinition<RoGuild> filter = null)
+        {
+            try
+            {
+                if (filter == null)
+                    filter = Builders<RoGuild>.Filter.Where(g => g.GuildId == GuildId);
+                await _guilds.FindOneAndUpdateAsync(filter, update);
+                return true;
+            }
+            catch (Exception e)
+            {
+                throw new RoMongoException(e.Message);
+            }
+        }
     }
 }

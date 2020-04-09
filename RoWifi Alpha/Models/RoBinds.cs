@@ -6,7 +6,13 @@ namespace RoWifi_Alpha.Models
     {
         public int GroupId { get; set; }
         public ulong[] DiscordRoles { get; set; }
+        /// <summary>
+        /// The ID inside the group (0-255)
+        /// </summary>
         public int RbxRankId { get; set; }
+        /// <summary>
+        /// The Global ID given by Roblox
+        /// </summary>
         public int RbxGrpRoleId { get; set; }
         public string Prefix { get; set; }
         public int Priority { get; set; }
