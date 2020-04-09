@@ -1,14 +1,10 @@
-﻿using Discord;
-using Discord.Addons.Interactive;
-using Discord.Commands;
+﻿using Discord.Commands;
 using Discord.WebSocket;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
-namespace RoWifi_Alpha.Criterion
+namespace RoWifi_Alpha.Addons.Interactive
 {
     public class EnsureContentCriterion : ICriterion<SocketMessage>
     {

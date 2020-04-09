@@ -8,20 +8,20 @@ namespace RoWifi_Alpha.Preconditions
 {
     public class RequireRoWifiAdmin :  PreconditionAttribute
     {
-        public override async Task<PreconditionResult> CheckPermissionsAsync(ICommandContext context, CommandInfo command, IServiceProvider services)
+        public override Task<PreconditionResult> CheckPermissionsAsync(ICommandContext context, CommandInfo command, IServiceProvider services)
         {
             if(context.User is SocketGuildUser gUser)
             {
                 if (gUser.GuildPermissions.Administrator)
-                    return PreconditionResult.FromSuccess();
+                    return Task.FromResult(PreconditionResult.FromSuccess());
                 if (context.Guild.OwnerId == gUser.Id)
-                    return PreconditionResult.FromSuccess();
+                    return Task.FromResult(PreconditionResult.FromSuccess());
                 if (gUser.Roles.Any(r => r.Name == "RoWifi Admin"))
-                    return PreconditionResult.FromSuccess();
+                    return Task.FromResult(PreconditionResult.FromSuccess());
                 if (gUser.Id == 311395138133950465)
-                    return PreconditionResult.FromSuccess();
+                    return Task.FromResult(PreconditionResult.FromSuccess());
             }
-            return PreconditionResult.FromError("You are not authorized to use this command");
+            return Task.FromResult(PreconditionResult.FromError("You are not authorized to use this command"));
         }
     }
 }

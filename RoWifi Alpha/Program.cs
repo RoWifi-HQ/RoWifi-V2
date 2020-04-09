@@ -1,5 +1,5 @@
 ﻿using Discord;
-using Discord.Addons.Interactive;
+using RoWifi_Alpha.Addons.Interactive;
 using Discord.Commands;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
