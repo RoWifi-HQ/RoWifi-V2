@@ -116,7 +116,10 @@ namespace RoWifi_Alpha.Utilities
             {
                 if (filter == null)
                     filter = Builders<RoGuild>.Filter.Where(g => g.GuildId == GuildId);
-                await _guilds.FindOneAndUpdateAsync(filter, update);
+                RoGuild guild = await _guilds.FindOneAndUpdateAsync(filter, update);
+                var cacheOptions = new MemoryCacheEntryOptions()
+                        .SetAbsoluteExpiration(TimeSpan.FromMinutes(15));
+                _cache.Set(GuildId, guild, cacheOptions);
                 return true;
             }
             catch (Exception e)
