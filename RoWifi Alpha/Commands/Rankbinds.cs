@@ -20,14 +20,13 @@ namespace RoWifi_Alpha.Commands
         public RobloxService Roblox { get; set; }
 
         [Command(RunMode = RunMode.Async), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-        public async Task ViewRankbindsAsync()
+        public async Task<RuntimeResult> ViewRankbindsAsync()
         {
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
+            if (guild == null)
+                return RoWifiResult.FromError("Bind Viewing Failed", "Server was not setup. Please ask the server owner to set up this server.");
             if (guild.RankBinds.Count == 0)
-            {
-                await ReplyAsync("There were no rankbinds found associated with this server. Perhaps you meant to use `rankbinds new`");
-                return;
-            }
+                return RoWifiResult.FromError("Bind Viewing Failed", "There were no rankbinds found associated with this server. Perhaps you meant to use `rankbinds new`");
             var UniqueGroups = guild.RankBinds.Select(r => r.GroupId).Distinct();
             List<EmbedBuilder> embeds = new List<EmbedBuilder>();
             foreach (int Group in UniqueGroups)
@@ -47,6 +46,7 @@ namespace RoWifi_Alpha.Commands
                 }
             }
             await PagedReplyAsync(embeds);
+            return RoWifiResult.FromSuccess();
         }
 
         [Command("new"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]

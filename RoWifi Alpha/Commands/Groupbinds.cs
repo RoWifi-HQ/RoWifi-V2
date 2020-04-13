@@ -17,14 +17,13 @@ namespace RoWifi_Alpha.Commands
         public DatabaseService Database { get; set; }
 
         [Command(RunMode = RunMode.Async), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-        public async Task ViewGroupbindsAsync() 
+        public async Task<RuntimeResult> ViewGroupbindsAsync() 
         {
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
-            if (guild.RankBinds.Count == 0)
-            {
-                await ReplyAsync("There were no rankbinds found associated with this server. Perhaps you meant to use `rankbinds new`");
-                return;
-            }
+            if (guild == null)
+                return RoWifiResult.FromError("Bind Viewing Failed", "Server was not setup. Please ask the server owner to set up this server.");
+            if (guild.GroupBinds.Count == 0)
+                return RoWifiResult.FromError("Bind Viewing Failed", "There were no groupbinds found associated with this server. Perhaps you meant to use `rankbinds new`");
 
             List<EmbedBuilder> embeds = new List<EmbedBuilder>();
             var GroupBindsList = guild.GroupBinds.Select((x, i) => new { Index = i, Value = x }).GroupBy(x => x.Index / 12).Select(x => x.Select(v => v.Value).ToList());
@@ -32,13 +31,14 @@ namespace RoWifi_Alpha.Commands
             foreach (List<GroupBind> GBS in GroupBindsList)
             {
                 EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
-                embed.WithTitle("Rankbinds").WithDescription($"Page {Page}");
+                embed.WithTitle("Groupbinds").WithDescription($"Page {Page}");
                 foreach (GroupBind bind in GBS)
                     embed.AddField($"Group Id: {bind.GroupId}", $"Roles: { string.Concat(bind.DiscordRoles.Select(r => $"<@&{r}> "))}");
                 embeds.Add(embed);
                 Page++;
             }
             await PagedReplyAsync(embeds);
+            return RoWifiResult.FromSuccess();
         }
 
         [Command("new"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
