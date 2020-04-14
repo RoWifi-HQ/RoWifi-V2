@@ -68,13 +68,13 @@ namespace RoWifi_Alpha.Commands
                 return RoWifiResult.FromError("Bind Addition Failed", $"Command Error: {e.Message}");
             }
 
-            await Context.Channel.SendMessageAsync("Enter Prefix to use in the nickname. Enter `N/A` if you do not wish to set a prefix.\nSay `cancel` if you wish to cancel this command");
+            await ReplyAsync("Enter Prefix to use in the nickname. Enter `N/A` if you do not wish to set a prefix.\nSay `cancel` if you wish to cancel this command");
             SocketMessage response = await NextMessageAsync(new EnsureSourceUserCriterion());
             if (response == null || response.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase))
                 return RoWifiResult.FromError("Bind Addition Failed", "Command has been cancelled");
             string Prefix = response.Content;
 
-            await Context.Channel.SendMessageAsync("Enter the priority of this bind\nSay `cancel` if you wish to cancel this command");
+            await ReplyAsync("Enter the priority of this bind\nSay `cancel` if you wish to cancel this command");
             response = await NextMessageAsync(new EnsureSourceUserCriterion());
             if (response == null || response.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase))
                 return RoWifiResult.FromError("Bind Addition Failed", "Command has been cancelled");
@@ -82,7 +82,7 @@ namespace RoWifi_Alpha.Commands
             if (!Success)
                 return RoWifiResult.FromError("Bind Addition Failed", "Priority was not found to be a valid number");
 
-            await Context.Channel.SendMessageAsync("Ping the Discord Roles you wish to bind to this role. Enter `N/A` if you wish to not bind any role\nSay `cancel` if you wish to cancel this command");
+            await ReplyAsync("Ping the Discord Roles you wish to bind to this role. Enter `N/A` if you wish to not bind any role\nSay `cancel` if you wish to cancel this command");
             response = await NextMessageAsync(new EnsureSourceUserCriterion());
             if (response == null || response.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase))
                 return RoWifiResult.FromError("Bind Addition Failed", "Command has been cancelled");
@@ -94,6 +94,7 @@ namespace RoWifi_Alpha.Commands
             CustomBind Bind = new CustomBind(Id, Code, Prefix, Priority, Roles.Select(r => r.Id).ToArray());
             UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Push(g => g.CustomBinds, Bind);
             await Database.ModifyGuild(Context.Guild.Id, update);
+
             EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
             embed.WithColor(Color.Green).WithTitle("Bind Addition Successful")
                 .AddField($"Bind Id: {Bind.Id}", $"Code: {Bind.Code}\nPrefix: {Bind.Prefix}\nPriority: {Bind.Priority}\nRoles: {string.Concat(Bind.DiscordRoles.Select(r => $" <@&{ r}> "))}", true);

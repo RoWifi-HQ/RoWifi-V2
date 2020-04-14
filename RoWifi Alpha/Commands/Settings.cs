@@ -1,0 +1,105 @@
+﻿using Discord;
+using Discord.Commands;
+using MongoDB.Driver;
+using RoWifi_Alpha.Models;
+using RoWifi_Alpha.Preconditions;
+using RoWifi_Alpha.Utilities;
+using System.Threading.Tasks;
+
+namespace RoWifi_Alpha.Commands
+{
+    [Group("settings")]
+    public class Settings : ModuleBase<SocketCommandContext>
+    {
+        public DatabaseService Database { get; set; }
+
+        [Command, RequireContext(ContextType.Guild), RequireRoWifiAdmin]
+        public async Task<RuntimeResult> ViewSettingsAsync()
+        {
+            RoGuild guild = await Database.GetGuild(Context.Guild.Id);
+            if (guild == null)
+                return RoWifiResult.FromError("Settings Viewing Failed", "Server was not setup. Please ask the server owner to set up this server.");
+            string Tier = "Normal";
+            if (guild.Settings.Type == GuildType.Alpha) Tier = "Alpha";
+            if (guild.Settings.Type == GuildType.Beta) Tier = "Beta";
+
+            EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
+            embed.AddField("Guild Id", $"{Context.Guild.Id}")
+                .AddField("Member Count", $"{Context.Guild.MemberCount}")
+                .AddField("Shard Id", $"{Context.Client.ShardId}")
+                .AddField("Settings", $"Tier: {Tier}\nAutoDetection: {guild.Settings.AutoDetection}")
+                .AddField("Verification Role", $"<@&{guild.VerificationRole}>")
+                .AddField("Verified Role", $"<@&{guild.VerifiedRole}>")
+                .AddField("Rankbinds", $"{guild.RankBinds.Count}")
+                .AddField("Groupbinds", $"{guild.GroupBinds.Count}");
+            await ReplyAsync(embed: embed.Build());
+            return RoWifiResult.FromSuccess();
+        }
+
+        [Command("verification"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
+        public async Task<RuntimeResult> VerificationAsync(IRole Role)
+        {
+            RoGuild guild = await Database.GetGuild(Context.Guild.Id);
+            if (guild == null)
+                return RoWifiResult.FromError("Settings Modificatione Failed", "Server was not setup. Please ask the server owner to set up this server.");
+
+            UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Set(g => g.VerificationRole, Role.Id);
+            await Database.ModifyGuild(Context.Guild.Id, update);
+            EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
+            embed.WithColor(Color.Green).WithTitle("Settings Modification Successful")
+                .AddField($"Verification Role", $"<@&{Role.Id}>", true);
+            await ReplyAsync(embed: embed.Build());
+            return RoWifiResult.FromSuccess();
+        }
+
+        [Command("verified"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
+        public async Task<RuntimeResult> VerifiedAsync(IRole Role)
+        {
+            RoGuild guild = await Database.GetGuild(Context.Guild.Id);
+            if (guild == null)
+                return RoWifiResult.FromError("Settings Modification Failed", "Server was not setup. Please ask the server owner to set up this server.");
+
+            UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Set(g => g.VerifiedRole, Role.Id);
+            await Database.ModifyGuild(Context.Guild.Id, update);
+            EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
+            embed.WithColor(Color.Green).WithTitle("Settings Modification Successful")
+                .AddField($"Verified Role", $"<@&{Role.Id}>", true);
+            await ReplyAsync(embed: embed.Build());
+            return RoWifiResult.FromSuccess();
+        }
+
+        [Command("disable-commands"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
+        public async Task<RuntimeResult> DisableCommandsAsync()
+        {
+            RoGuild guild = await Database.GetGuild(Context.Guild.Id);
+            if (guild == null)
+                return RoWifiResult.FromError("Settings Modification Failed", "Server was not setup. Please ask the server owner to set up this server.");
+            if (guild.DisabledChannels.Contains(Context.Channel.Id))
+                return RoWifiResult.FromError("Settings Modification Failed", "Commands have already been disabled in this channel");
+
+            UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Push(g => g.DisabledChannels, Context.Channel.Id);
+            await Database.ModifyGuild(Context.Guild.Id, update);
+            EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
+            embed.WithColor(Color.Green).WithTitle("Settings Modification Successful").WithDescription("Commands have been disabled in this channel successfully");
+            await ReplyAsync(embed: embed.Build());
+            return RoWifiResult.FromSuccess();
+        }
+
+        [Command("enable-commands"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
+        public async Task<RuntimeResult> EnableCommandsAsync()
+        {
+            RoGuild guild = await Database.GetGuild(Context.Guild.Id);
+            if (guild == null)
+                return RoWifiResult.FromError("Settings Modification Failed", "Server was not setup. Please ask the server owner to set up this server.");
+            if (!guild.DisabledChannels.Contains(Context.Channel.Id))
+                return RoWifiResult.FromError("Settings Modification Failed", "Commands have not been disabled in this channel");
+
+            UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Push(g => g.DisabledChannels, Context.Channel.Id);
+            await Database.ModifyGuild(Context.Guild.Id, update);
+            EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
+            embed.WithColor(Color.Green).WithTitle("Settings Modification Successful").WithDescription("Commands have been disabled in this channel successfully");
+            await ReplyAsync(embed: embed.Build());
+            return RoWifiResult.FromSuccess();
+        }
+    }
+}
