@@ -84,7 +84,7 @@ namespace RoWifi_Alpha.Models
 
     public enum BlacklistType
     {
-        Roblox, Discord
+        Name, Group, Custom
     }
     public class RoBlacklist
     {
