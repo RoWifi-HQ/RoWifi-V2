@@ -21,7 +21,7 @@ namespace RoWifi_Alpha.Utilities.RoLang
 
         public override object EvaluateAsync(RoCommandUser user)
         {
-            return this.value;
+            return value;
         }
     }
 
@@ -35,16 +35,29 @@ namespace RoWifi_Alpha.Utilities.RoLang
         {
             if (oper.type == TokenType.HAS_RANK && args.Count != 2)
             {
+                bool Success = int.TryParse((string)args[0].value, out _);
+                if (!Success) throw new Exception("Expected integer at arg Group Id");
+                Success = int.TryParse((string)args[1].value, out _);
+                if (!Success) throw new Exception("Expected integer at arg Rank Id");
+
                 throw new Exception("Expected only 2 arguments. {Group Id}, {Rank Id}");
             }
             else if (oper.type == TokenType.IS_IN_GROUP && args.Count != 1)
             {
+                bool Success = int.TryParse((string)args[0].value, out _);
+                if (!Success) throw new Exception("Expected integer at arg Group Id");
                 throw new Exception("Expected only 1 arguments. {Group Id}");
             }
             else if (oper.type == TokenType.WITH_STRING && args.Count != 1)
+            {
                 throw new Exception("Expected only 1 argument. {Keyword}");
+            }
             else if (oper.type == TokenType.HAS_ROLE && args.Count != 1)
+            {
+                bool Success = ulong.TryParse((string)args[0].value, out _);
+                if (!Success) throw new Exception("Expected integer at arg Role Id");
                 throw new Exception("Expected only 1 argument. {Role Id}");
+            }
             this.oper = oper;
             this.args = args;
             this.Flip = Flip;
