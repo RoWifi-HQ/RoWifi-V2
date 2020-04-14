@@ -15,6 +15,7 @@ namespace RoWifi_Alpha.Utilities
         private readonly IMongoDatabase _database;
         private readonly IMongoCollection<RoUser> _users;
         private readonly IMongoCollection<RoGuild> _guilds;
+        private readonly IMongoCollection<Premium> _premium;  
         private readonly IMemoryCache _cache;
 
         public DatabaseService(IMemoryCache cache)
@@ -23,6 +24,7 @@ namespace RoWifi_Alpha.Utilities
             _database = _client.GetDatabase("RoWifi");
             _users = _database.GetCollection<RoUser>("users");
             _guilds = _database.GetCollection<RoGuild>("guilds");
+            _premium = _database.GetCollection<Premium>("premium");
             _cache = cache;
         }
 
@@ -121,6 +123,32 @@ namespace RoWifi_Alpha.Utilities
                         .SetAbsoluteExpiration(TimeSpan.FromMinutes(15));
                 _cache.Set(GuildId, guild, cacheOptions);
                 return true;
+            }
+            catch (Exception e)
+            {
+                throw new RoMongoException(e.Message);
+            }
+        }
+
+        public async Task<bool> AddPremium(Premium premium)
+        {
+            try
+            {
+                await _premium.InsertOneAsync(premium);
+                return true;
+            }
+            catch (Exception e)
+            {
+                throw new RoMongoException(e.Message);
+            }
+        }
+
+        public async Task<Premium> GetPremium(ulong DiscordId)
+        {
+            try
+            {
+                IAsyncCursor<Premium> cursor = await _premium.FindAsync(b => b.DiscordId == DiscordId);
+                return cursor.FirstOrDefault();
             }
             catch (Exception e)
             {

@@ -49,6 +49,7 @@ namespace RoWifi_Alpha
                 .AddSingleton<DatabaseService>()
                 .AddSingleton<LoggerService>();
             services.AddHttpClient<RobloxService>();
+            services.AddHttpClient<PatreonService>();
             services.AddMemoryCache();
             return services.BuildServiceProvider();
         }

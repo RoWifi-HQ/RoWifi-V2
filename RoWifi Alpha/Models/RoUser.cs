@@ -111,4 +111,25 @@ namespace RoWifi_Alpha.Models
             return (AddedRoles.Select(r => r.Id).ToList(), RemovedRoles.Select(r => r.Id).ToList());
         }
     }
+
+    public enum PremiumType
+    {
+        Alpha, Beta
+    }
+
+    public class Premium
+    {
+        [BsonId]
+        [BsonElement("DiscordId")]
+        public ulong DiscordId { get; set; }
+
+        [BsonElement("Type")]
+        public PremiumType PType { get; set; }
+
+        [BsonElement("PatreonId")]
+        public ulong PatreonId { get; set; }
+
+        [BsonElement("Servers")]
+        public List<ulong> DiscordServers { get; set; }
+    }
 }
