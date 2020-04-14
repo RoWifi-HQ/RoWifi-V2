@@ -188,5 +188,27 @@ namespace RoWifi_Alpha.Commands
                 return RoWifiResult.FromRobloxError("Update Failed");
             }
         }
+
+        [Command("userinfo"), RequireContext(ContextType.Guild)]
+        public async Task<RuntimeResult> UserInfoAsync(IGuildUser member = null)
+        {
+            if (member == null)
+                member = Context.User as IGuildUser;
+
+            RoUser user = await Database.GetUserAsync(member.Id);
+            if (user == null)
+                return RoWifiResult.FromError("User Information Failed", "User was not verified. Please ask the user to verify.");
+
+            string Username = await Roblox.GetUsernameFromId(user.RobloxId);
+            EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
+            embed.WithTitle(member.Username)
+                .WithDescription("Profile Information")
+                .WithThumbnailUrl($"http://www.roblox.com/Thumbs/Avatar.ashx?x=150&y=150&Format=Png&username={Username}")
+                .AddField("Username", Username)
+                .AddField("Roblox Id", user.RobloxId)
+                .AddField("Discord Id", user.DiscordId);
+            await ReplyAsync(embed: embed.Build());
+            return RoWifiResult.FromSuccess();
+        }
     }
 }
