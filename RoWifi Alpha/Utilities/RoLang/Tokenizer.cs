@@ -5,7 +5,7 @@ namespace RoWifi_Alpha.Utilities.RoLang
 {
     public class Tokenizer
     {
-        private string source;
+        private readonly string source;
         private int start = 0;
         private int current = 0;
         private List<Token> tokens = new List<Token>();
@@ -16,7 +16,9 @@ namespace RoWifi_Alpha.Utilities.RoLang
             {"or", TokenType.OR },
             {"HasRank", TokenType.HAS_RANK},
             {"not", TokenType.NOT },
-            {"IsInGroup", TokenType.IS_IN_GROUP}
+            {"IsInGroup", TokenType.IS_IN_GROUP},
+            {"HasRole", TokenType.HAS_ROLE},
+            {"WithString", TokenType.WITH_STRING}
         };
 
         public Tokenizer(string code)
@@ -77,7 +79,7 @@ namespace RoWifi_Alpha.Utilities.RoLang
 
         private void AddToken(TokenType type, object literal)
         {
-            string text = source.Substring(start, current - start);
+            string text = source[start..current];
             tokens.Add(new Token(type, text, literal));
         }
 
@@ -100,13 +102,13 @@ namespace RoWifi_Alpha.Utilities.RoLang
         private void Number()
         {
             while (IsDigit(Peek())) Advance();
-            AddToken(TokenType.NUMBER, int.Parse(source.Substring(start, current - start)));
+            AddToken(TokenType.NUMBER, int.Parse(source[start..current]));
         }
 
         private void Identifier()
         {
             while (IsAlpha(Peek())) Advance();
-            string text = source.Substring(start, current - start);
+            string text = source[start..current];
             bool Success = Keywords.TryGetValue(text, out TokenType type);
             if (!Success) throw new Exception("Expected Keyword");
             AddToken(type);

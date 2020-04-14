@@ -1,8 +1,5 @@
 ﻿using RoWifi_Alpha.Models;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace RoWifi_Alpha.Utilities.RoLang
 {
@@ -15,9 +12,9 @@ namespace RoWifi_Alpha.Utilities.RoLang
             this.expr = expr;
         }
 
-        public bool Evaluate(RoUser user, Dictionary<int, int> Ranks)
+        public bool Evaluate(RoCommandUser user)
         {
-            bool operation = (bool)expr.EvaluateAsync(user, Ranks);
+            bool operation = (bool)expr.EvaluateAsync(user);
             return operation;
         }
     }

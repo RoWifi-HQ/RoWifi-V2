@@ -28,6 +28,7 @@ namespace RoWifi_Alpha.Models
                 await member.AddRoleAsync(VerifiedRole, new RequestOptions { AuditLogReason = reason });
 
             Dictionary<int, int> userRoleIds = await Roblox.GetUserRoles(RobloxId);
+            string RobloxName = await Roblox.GetUsernameFromId(RobloxId);
             List<RankBind> RankBindsToAdd = new List<RankBind>();
             List<GroupBind> GroupBindsToAdd = new List<GroupBind>();
             List<CustomBind> CustomBindsToAdd = new List<CustomBind>();
@@ -42,25 +43,25 @@ namespace RoWifi_Alpha.Models
                     GroupBindsToAdd.Add(gBind);
             }
 
+            RoCommandUser CommandUser = new RoCommandUser(this, member, userRoleIds, RobloxName);
             if(guild.CustomBinds != null)
             {
                 foreach (CustomBind bind in guild.CustomBinds)
                 {
-                    bool Success = bind.Cmd.Evaluate(this, userRoleIds);
+                    bool Success = bind.Cmd.Evaluate(CommandUser);
                     if (Success)
                         CustomBindsToAdd.Add(bind);
                 }
             }
 
             (List<ulong> AddedRoles, List<ulong> RemovedRoles) = await UpdateBindRolesAsync(member, server, guild, RankBindsToAdd, GroupBindsToAdd, CustomBindsToAdd, reason);
-            string DiscNick = await UpdateNicknameAsync(Roblox, member, RankBindsToAdd, CustomBindsToAdd, reason);
+            string DiscNick = await UpdateNicknameAsync(RobloxName, member, RankBindsToAdd, CustomBindsToAdd, reason);
 
             return (AddedRoles, RemovedRoles, DiscNick);
         }
 
-        private async Task<string> UpdateNicknameAsync(RobloxService Roblox, IGuildUser member, List<RankBind> RankBindsToAdd, List<CustomBind> CustomBindsToAdd, string reason)
+        private async Task<string> UpdateNicknameAsync(string RobloxName, IGuildUser member, List<RankBind> RankBindsToAdd, List<CustomBind> CustomBindsToAdd, string reason)
         {
-            string RobloxName = await Roblox.GetUsernameFromId(RobloxId);
             string DiscNick;
 
             RankBind nickBind = RankBindsToAdd.OrderByDescending(b => b.Priority).FirstOrDefault();

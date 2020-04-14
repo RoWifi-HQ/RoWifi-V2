@@ -1,4 +1,5 @@
-﻿using RoWifi_Alpha.Utilities.RoLang;
+﻿using Discord;
+using RoWifi_Alpha.Utilities.RoLang;
 using System;
 using System.Collections.Generic;
 
@@ -17,12 +18,12 @@ namespace RoWifi_Alpha.Models
             expr = scanner.Parse();
         }
 
-        public bool Evaluate(RoUser user, Dictionary<int, int> Ranks)
+        public bool Evaluate(RoCommandUser user)
         {
             try
             {
                 Intepreter intepreter = new Intepreter(expr);
-                bool ans = intepreter.Evaluate(user, Ranks);
+                bool ans = intepreter.Evaluate(user);
                 return ans;
             }
             catch (Exception e)
@@ -31,6 +32,22 @@ namespace RoWifi_Alpha.Models
                 Console.WriteLine(e.StackTrace);
                 throw;
             }
+        }
+    }
+
+    public class RoCommandUser
+    {
+        public RoUser User;
+        public IGuildUser Member;
+        public Dictionary<int, int> Ranks;
+        public string RobloxUsername;
+
+        public RoCommandUser(RoUser User, IGuildUser Member, Dictionary<int, int> Ranks, string RobloxUsername)
+        {
+            this.User = User;
+            this.Member = Member;
+            this.Ranks = Ranks;
+            this.RobloxUsername = RobloxUsername;
         }
     }
 }

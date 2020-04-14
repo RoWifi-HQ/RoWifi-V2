@@ -61,7 +61,9 @@ namespace RoWifi_Alpha.Commands
             {
                 RoCommand cmd = new RoCommand(Code);
                 Dictionary<int, int> Ranks = await Roblox.GetUserRoles(user.RobloxId);
-                cmd.Evaluate(user, Ranks);
+                string Username = await Roblox.GetUsernameFromId(user.RobloxId);
+                RoCommandUser CommandUser = new RoCommandUser(user, Context.User as IGuildUser, Ranks, Username);
+                cmd.Evaluate(CommandUser);
             }
             catch (Exception e)
             {

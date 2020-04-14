@@ -2,7 +2,7 @@
 {
     public enum TokenType
     {
-        AND, OR, NOT, LEFT_PAREN, RIGHT_PAREN, COMMA, HAS_RANK, EOF, NUMBER, IS_IN_GROUP
+        AND, OR, NOT, LEFT_PAREN, RIGHT_PAREN, COMMA, HAS_RANK, EOF, NUMBER, IS_IN_GROUP, HAS_ROLE, WITH_STRING
     }
 
     public class Token
