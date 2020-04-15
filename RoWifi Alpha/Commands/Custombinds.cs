@@ -28,7 +28,7 @@ namespace RoWifi_Alpha.Commands
             if (guild.Settings.Type != GuildType.Beta)
                 return RoWifiResult.FromError("Bind Viewing Failed", "This module may only be used in Beta Tier Servers");
             if (guild.CustomBinds.Count == 0)
-                return RoWifiResult.FromError("Bind Viewing Failed", "There were no custombinds found associated with this server. Perhaps you meant to use `rankbinds new`");
+                return RoWifiResult.FromError("Bind Viewing Failed", "There were no custombinds found associated with this server. Perhaps you meant to use `custombinds new`");
             
             List<EmbedBuilder> embeds = new List<EmbedBuilder>();
             var CustomBindsList = guild.CustomBinds.Select((x, i) => new { Index = i, Value = x }).GroupBy(x => x.Index / 12).Select(x => x.Select(v => v.Value).ToList());
