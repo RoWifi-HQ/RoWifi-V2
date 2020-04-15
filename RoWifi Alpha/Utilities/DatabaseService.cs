@@ -15,7 +15,8 @@ namespace RoWifi_Alpha.Utilities
         private readonly IMongoDatabase _database;
         private readonly IMongoCollection<RoUser> _users;
         private readonly IMongoCollection<RoGuild> _guilds;
-        private readonly IMongoCollection<Premium> _premium;  
+        private readonly IMongoCollection<Premium> _premium;
+        private readonly IMongoCollection<RoBackup> _backups;
         private readonly IMemoryCache _cache;
 
         public DatabaseService(IMemoryCache cache)
@@ -25,6 +26,7 @@ namespace RoWifi_Alpha.Utilities
             _users = _database.GetCollection<RoUser>("users");
             _guilds = _database.GetCollection<RoGuild>("guilds");
             _premium = _database.GetCollection<Premium>("premium");
+            _backups = _database.GetCollection<RoBackup>("backups");
             _cache = cache;
         }
 
@@ -70,6 +72,26 @@ namespace RoWifi_Alpha.Utilities
                     await _users.InsertOneAsync(user);
                 else
                     await _users.ReplaceOneAsync(u => u.DiscordId == user.DiscordId, user);
+            }
+            catch (Exception e)
+            {
+                throw new RoMongoException(e.Message);
+            }
+        }
+
+        public async Task<bool> AddGuild(RoGuild guild, bool newGuild)
+        {
+            try
+            {
+                if (newGuild)
+                {
+                    await _guilds.InsertOneAsync(guild);
+                }
+                else
+                {
+                    await _guilds.ReplaceOneAsync(g => g.GuildId == guild.GuildId, guild);
+                }
+                return true;
             }
             catch (Exception e)
             {
@@ -161,6 +183,36 @@ namespace RoWifi_Alpha.Utilities
             try
             {
                 await _premium.FindOneAndUpdateAsync(u => u.DiscordId == DiscordId, update);
+                return true;
+            }
+            catch (Exception e)
+            {
+                throw new RoMongoException(e.Message);
+            }
+        }
+
+        public async Task<RoBackup> GetBackup(ulong UserId, string Name)
+        {
+            try
+            {
+                IAsyncCursor<RoBackup> cursor = await _backups.FindAsync(b => b.UserId == UserId && b.Name == Name);
+                return cursor.FirstOrDefault();
+            }
+            catch (Exception e)
+            {
+                throw new RoMongoException(e.Message);
+            }
+        }
+
+        public async Task<bool> AddBackup(RoBackup backup, string Name)
+        {
+            try
+            {
+                var check = GetBackup(backup.UserId, backup.Name);
+                if (check == null)
+                    await _backups.InsertOneAsync(backup);
+                else
+                    await _backups.FindOneAndReplaceAsync(b => b.UserId == backup.UserId && b.Name == Name, backup);
                 return true;
             }
             catch (Exception e)

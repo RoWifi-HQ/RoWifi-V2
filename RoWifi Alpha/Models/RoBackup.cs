@@ -13,6 +13,9 @@ namespace RoWifi_Alpha.Models
         [BsonElement("UserId")]
         public ulong UserId { get; set; }
 
+        [BsonElement("Name")]
+        public string Name { get; set; }
+
         [BsonElement("Settings")]
         public GuildSettings Settings { get; set; }
 
@@ -33,6 +36,46 @@ namespace RoWifi_Alpha.Models
 
         [BsonElement("Blacklists")]
         public List<RoBlacklist> Blacklists { get; set; }
+
+        public RoBackup(ulong userId, string Name, RoGuild guild, IGuild server)
+        {
+            UserId = userId;
+            this.Name = Name;
+            Settings = guild.Settings;
+            VerificationRole = server.Roles.Where(r => r != null).Where(r => r.Id == guild.VerificationRole).Select(r => r.Name).FirstOrDefault();
+            VerifiedRole = server.Roles.Where(r => r != null).Where(r => r.Id == guild.VerifiedRole).Select(r => r.Name).FirstOrDefault();
+            Rankbinds = guild.RankBinds.Select(r => new BRankBind(r, server)).ToList();
+            Groupbinds = guild.GroupBinds.Select(g => new BGroupBind(g, server)).ToList();
+            if (guild.CustomBinds != null)
+                Custombinds = guild.CustomBinds.Select(g => new BCustomBind(g, server)).ToList();
+            if (guild.Blacklists != null)
+                Blacklists = guild.Blacklists;
+        }
+
+        public async Task<RoGuild> RestoreAsync(IGuild server)
+        {
+            RoGuild guild = new RoGuild { GuildId = server.Id };
+            //Restore Verification Role
+            IRole role = server.Roles.Where(r => r != null).Where(r => r.Name == VerificationRole).FirstOrDefault();
+            if (role == null)
+                role = await server.CreateRoleAsync(VerificationRole, isMentionable: false);
+            guild.VerificationRole = role.Id;
+            //Restore Verified Role
+            IRole role2 = server.Roles.Where(r => r != null).Where(r => r.Name == VerifiedRole).FirstOrDefault();
+            if (role2 == null)
+                role2 = await server.CreateRoleAsync(VerifiedRole, isMentionable: false);
+            guild.VerifiedRole = role2.Id;
+            //Restore Rankbinds
+            foreach (BRankBind bind in Rankbinds)
+                guild.RankBinds.Add(await bind.RestoreAsync(server));
+            //Restore Groupbinds
+            foreach (BGroupBind bind in Groupbinds)
+                guild.GroupBinds.Add(await bind.RestoreAsync(server));
+            foreach (BCustomBind bind in Custombinds)
+                guild.CustomBinds.Add(await bind.RestoreAsync(server));
+            guild.Blacklists = Blacklists;
+            return guild;
+        }
     }
 
     public class BRankBind
