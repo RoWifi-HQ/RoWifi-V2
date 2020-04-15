@@ -155,5 +155,18 @@ namespace RoWifi_Alpha.Utilities
                 throw new RoMongoException(e.Message);
             }
         }
+
+        public async Task<bool> ModifyPremium(ulong DiscordId, UpdateDefinition<Premium> update)
+        {
+            try
+            {
+                await _premium.FindOneAndUpdateAsync(u => u.DiscordId == DiscordId, update);
+                return true;
+            }
+            catch (Exception e)
+            {
+                throw new RoMongoException(e.Message);
+            }
+        }
     }
 }
