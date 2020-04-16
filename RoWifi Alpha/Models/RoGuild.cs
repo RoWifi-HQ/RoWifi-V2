@@ -58,6 +58,17 @@ namespace RoWifi_Alpha.Models
         [BsonElement("DisabledChannels")]
         public List<ulong> DisabledChannels { get; set; }
 
+        public RoGuild(ulong guildId)
+        {
+            GuildId = guildId;
+            Settings = new GuildSettings { Type = GuildType.Normal, AutoDetection = false };
+            RankBinds = new List<RankBind>();
+            GroupBinds = new List<GroupBind>();
+            Blacklists = new List<RoBlacklist>();
+            CustomBinds = new List<CustomBind>();
+            DisabledChannels = new List<ulong>();
+        }
+
         public List<ulong> GetUniqueRoles()
         {
             var AllBindsEnumerable = RankBinds.Select(r => r.DiscordRoles).ToList();
