@@ -8,6 +8,7 @@
 
   <ItemGroup>
     <PackageReference Include="Coravel" Version="3.6.1" />
+    <PackageReference Include="Discord.Addons.CommandsExtension" Version="1.0.4" />
     <PackageReference Include="Discord.Net.Commands" Version="2.2.0" />
     <PackageReference Include="Discord.Net.Core" Version="2.2.0" />
     <PackageReference Include="Discord.Net.Rest" Version="2.2.0" />
