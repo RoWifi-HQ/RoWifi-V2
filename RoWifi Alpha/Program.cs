@@ -8,6 +8,7 @@ using RoWifi_Alpha.Utilities;
 using System;
 using System.Net.Http;
 using System.Threading.Tasks;
+using Coravel;
 
 namespace RoWifi_Alpha
 {
@@ -26,6 +27,12 @@ namespace RoWifi_Alpha
 
                 await client.LoginAsync(TokenType.Bot, Environment.GetEnvironmentVariable("DiscToken"));
                 await client.StartAsync();
+
+                services.UseScheduler(scheduler =>
+                {
+                    scheduler.Schedule<AutoDetection>()
+                        .Cron("00 */3 * * *");
+                });
 
                 await services.GetRequiredService<CommandHandler>().InitializeAsync();
                 await Task.Delay(-1);
@@ -48,9 +55,13 @@ namespace RoWifi_Alpha
                 .AddSingleton<InteractiveService>()
                 .AddSingleton<DatabaseService>()
                 .AddSingleton<LoggerService>();
+
             services.AddHttpClient<RobloxService>();
             services.AddHttpClient<PatreonService>();
             services.AddMemoryCache();
+
+            services.AddScheduler();
+
             return services.BuildServiceProvider();
         }
     }
