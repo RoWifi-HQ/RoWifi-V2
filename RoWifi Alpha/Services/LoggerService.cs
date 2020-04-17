@@ -8,7 +8,7 @@ namespace RoWifi_Alpha.Services
 {
     public class LoggerService
     {
-        public DiscordWebhookClient Webhook = new DiscordWebhookClient(Environment.GetEnvironmentVariable("LOG_PREMIUM"));
+        public DiscordWebhookClient Webhook = new DiscordWebhookClient(Environment.GetEnvironmentVariable("LOG_DEBUG"));
 
         public async Task LogServer(IGuild guild, Embed embed)
         {

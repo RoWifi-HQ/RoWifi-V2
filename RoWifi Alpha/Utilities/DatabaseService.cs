@@ -140,7 +140,8 @@ namespace RoWifi_Alpha.Utilities
             {
                 if (filter == null)
                     filter = Builders<RoGuild>.Filter.Where(g => g.GuildId == GuildId);
-                RoGuild guild = await _guilds.FindOneAndUpdateAsync(filter, update);
+                var options = new FindOneAndUpdateOptions<RoGuild, RoGuild> { ReturnDocument = ReturnDocument.After };
+                RoGuild guild = await _guilds.FindOneAndUpdateAsync(filter, update, options);
                 var cacheOptions = new MemoryCacheEntryOptions()
                         .SetAbsoluteExpiration(TimeSpan.FromMinutes(15));
                 _cache.Set(GuildId, guild, cacheOptions);

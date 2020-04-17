@@ -100,5 +100,22 @@ namespace RoWifi_Alpha.Utilities
                 throw new RobloxException(e.Message);
             }
         }
+
+        public async Task<List<JToken>> GetGroupRolesInRange(int RobloxId, int Min, int Max)
+        {
+            try
+            {
+                HttpResponseMessage response = await _client.GetAsync(new Uri($"https://groups.roblox.com/v1/groups/{RobloxId}/roles"));
+                string result = await response.Content.ReadAsStringAsync();
+                JObject jobject = JObject.Parse(result);
+                JArray roles = (JArray)jobject["roles"];
+                var req = roles.Where(r => (int)r["rank"] >= Min && (int)r["rank"] <= Max).Distinct().ToList();
+                return req;
+            }
+            catch (Exception e)
+            {
+                throw new RobloxException(e.Message);
+            }
+        }
     }
 }

@@ -14,7 +14,7 @@ namespace RoWifi_Alpha
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static void Main(string[] _)
             => new Program().MainAsync().GetAwaiter().GetResult();
 
         public async Task MainAsync()

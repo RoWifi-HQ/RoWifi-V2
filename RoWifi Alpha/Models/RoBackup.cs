@@ -54,7 +54,7 @@ namespace RoWifi_Alpha.Models
 
         public async Task<RoGuild> RestoreAsync(IGuild server)
         {
-            RoGuild guild = new RoGuild { GuildId = server.Id };
+            RoGuild guild = new RoGuild(server.Id);
             //Restore Verification Role
             IRole role = server.Roles.Where(r => r != null).Where(r => r.Name == VerificationRole).FirstOrDefault();
             if (role == null)
