@@ -104,11 +104,11 @@ namespace RoWifi_Alpha.Commands
             {
                 RoGuild guild = await Database.GetGuild(Context.Guild.Id);
                 if (guild == null)
-                    return RoWifiResult.FromError("Bind Deletion Failed", "Server was not setup. Please ask the server owner to set up this server.");
+                    return RoWifiResult.FromError("Bind Modification Failed", "Server was not setup. Please ask the server owner to set up this server.");
 
                 RankBind bind = guild.RankBinds.Where(r => r.GroupId == GroupId && r.RbxRankId == RankId).FirstOrDefault();
                 if (bind == null)
-                    return RoWifiResult.FromError("Bind Deletion Failed", "A bind with the given Group and Rank does not exist");
+                    return RoWifiResult.FromError("Bind Modification Failed", "A bind with the given Group and Rank does not exist");
 
                 FilterDefinition<RoGuild> filter = Builders<RoGuild>.Filter.Where(g => g.GuildId == Context.Guild.Id && g.RankBinds.Any(r => r.GroupId == GroupId && r.RbxRankId == RankId));
                 UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Set(r => r.RankBinds[-1].Prefix, Prefix);
@@ -124,11 +124,11 @@ namespace RoWifi_Alpha.Commands
             {
                 RoGuild guild = await Database.GetGuild(Context.Guild.Id);
                 if (guild == null)
-                    return RoWifiResult.FromError("Bind Deletion Failed", "Server was not setup. Please ask the server owner to set up this server.");
+                    return RoWifiResult.FromError("Bind Modification Failed", "Server was not setup. Please ask the server owner to set up this server.");
 
                 RankBind bind = guild.RankBinds.Where(r => r.GroupId == GroupId && r.RbxRankId == RankId).FirstOrDefault();
                 if (bind == null)
-                    return RoWifiResult.FromError("Bind Deletion Failed", "A bind with the given Group and Rank does not exist");
+                    return RoWifiResult.FromError("Bind Modification Failed", "A bind with the given Group and Rank does not exist");
 
                 FilterDefinition<RoGuild> filter = Builders<RoGuild>.Filter.Where(g => g.GuildId == Context.Guild.Id && g.RankBinds.Any(r => r.GroupId == GroupId && r.RbxRankId == RankId));
                 UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Set(r => r.RankBinds[-1].Priority, Priority);
@@ -144,11 +144,11 @@ namespace RoWifi_Alpha.Commands
             {
                 RoGuild guild = await Database.GetGuild(Context.Guild.Id);
                 if (guild == null)
-                    return RoWifiResult.FromError("Bind Deletion Failed", "Server was not setup. Please ask the server owner to set up this server.");
+                    return RoWifiResult.FromError("Bind Modification Failed", "Server was not setup. Please ask the server owner to set up this server.");
 
                 RankBind bind = guild.RankBinds.Where(r => r.GroupId == GroupId && r.RbxRankId == RankId).FirstOrDefault();
                 if (bind == null)
-                    return RoWifiResult.FromError("Bind Deletion Failed", "A bind with the given Group and Rank does not exist");
+                    return RoWifiResult.FromError("Bind Modification Failed", "A bind with the given Group and Rank does not exist");
 
                 FilterDefinition<RoGuild> filter = Builders<RoGuild>.Filter.Where(g => g.GuildId == Context.Guild.Id && g.RankBinds.Any(r => r.GroupId == GroupId && r.RbxRankId == RankId));
                 UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.AddToSetEach(r => r.RankBinds[-1].DiscordRoles, Roles.Select(r => r.Id));
@@ -164,11 +164,11 @@ namespace RoWifi_Alpha.Commands
             {
                 RoGuild guild = await Database.GetGuild(Context.Guild.Id);
                 if (guild == null)
-                    return RoWifiResult.FromError("Bind Deletion Failed", "Server was not setup. Please ask the server owner to set up this server.");
+                    return RoWifiResult.FromError("Bind Modification Failed", "Server was not setup. Please ask the server owner to set up this server.");
 
                 RankBind bind = guild.RankBinds.Where(r => r.GroupId == GroupId && r.RbxRankId == RankId).FirstOrDefault();
                 if (bind == null)
-                    return RoWifiResult.FromError("Bind Deletion Failed", "A bind with the given Group and Rank does not exist");
+                    return RoWifiResult.FromError("Bind Modification Failed", "A bind with the given Group and Rank does not exist");
 
                 FilterDefinition<RoGuild> filter = Builders<RoGuild>.Filter.Where(g => g.GuildId == Context.Guild.Id && g.RankBinds.Any(r => r.GroupId == GroupId && r.RbxRankId == RankId));
                 UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.PullAll(r => r.RankBinds[-1].DiscordRoles, Roles.Select(r => r.Id));

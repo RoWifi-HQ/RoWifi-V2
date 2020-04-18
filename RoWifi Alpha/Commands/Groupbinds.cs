@@ -82,5 +82,51 @@ namespace RoWifi_Alpha.Commands
             await ReplyAsync(embed: embed.Build());
             return RoWifiResult.FromSuccess();
         }
+
+        [Group("modify")]
+        public class ModifyGroupbinds : ModuleBase<SocketCommandContext>
+        {
+            public DatabaseService Database { get; set; }
+
+            [Command("roles-add"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
+            public async Task<RuntimeResult> AddRolesAsync(int GroupId, params IRole[] Roles)
+            {
+                RoGuild guild = await Database.GetGuild(Context.Guild.Id);
+                if (guild == null)
+                    return RoWifiResult.FromError("Bind Modification Failed", "Server was not setup. Please ask the server owner to set up this server.");
+
+                GroupBind bind = guild.GroupBinds.Where(r => r.GroupId == GroupId).FirstOrDefault();
+                if (bind == null)
+                    return RoWifiResult.FromError("Bind Modification Failed", "A bind with the given Group does not exist");
+
+                FilterDefinition<RoGuild> filter = Builders<RoGuild>.Filter.Where(g => g.GuildId == Context.Guild.Id && g.GroupBinds.Any(r => r.GroupId == GroupId));
+                UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.AddToSetEach(r => r.GroupBinds[-1].DiscordRoles, Roles.Select(r => r.Id));
+                await Database.ModifyGuild(Context.Guild.Id, update, filter);
+                EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
+                embed.WithColor(Color.Green).WithTitle("Bind Modification Successful").WithDescription($"The new roles were successfully added");
+                await ReplyAsync(embed: embed.Build());
+                return RoWifiResult.FromSuccess();
+            }
+
+            [Command("roles-remove"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
+            public async Task<RuntimeResult> RemoveRolesAsync(int GroupId, params IRole[] Roles)
+            {
+                RoGuild guild = await Database.GetGuild(Context.Guild.Id);
+                if (guild == null)
+                    return RoWifiResult.FromError("Bind Modification Failed", "Server was not setup. Please ask the server owner to set up this server.");
+
+                GroupBind bind = guild.GroupBinds.Where(r => r.GroupId == GroupId).FirstOrDefault();
+                if (bind == null)
+                    return RoWifiResult.FromError("Bind Modification Failed", "A bind with the given Group and Rank does not exist");
+
+                FilterDefinition<RoGuild> filter = Builders<RoGuild>.Filter.Where(g => g.GuildId == Context.Guild.Id && g.GroupBinds.Any(r => r.GroupId == GroupId));
+                UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.PullAll(r => r.GroupBinds[-1].DiscordRoles, Roles.Select(r => r.Id));
+                await Database.ModifyGuild(Context.Guild.Id, update, filter);
+                EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
+                embed.WithColor(Color.Green).WithTitle("Bind Modification Successful").WithDescription($"The new roles were successfully added");
+                await ReplyAsync(embed: embed.Build());
+                return RoWifiResult.FromSuccess();
+            }
+        }
     }
 }
