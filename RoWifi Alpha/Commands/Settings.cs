@@ -12,6 +12,7 @@ namespace RoWifi_Alpha.Commands
     public class Settings : ModuleBase<SocketCommandContext>
     {
         public DatabaseService Database { get; set; }
+        public CommandHandler Handler { get; set; }
 
         [Command, RequireContext(ContextType.Guild), RequireRoWifiAdmin]
         public async Task<RuntimeResult> ViewSettingsAsync()
@@ -98,6 +99,23 @@ namespace RoWifi_Alpha.Commands
             await Database.ModifyGuild(Context.Guild.Id, update);
             EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
             embed.WithColor(Color.Green).WithTitle("Settings Modification Successful").WithDescription("Commands have been disabled in this channel successfully");
+            await ReplyAsync(embed: embed.Build());
+            return RoWifiResult.FromSuccess();
+        }
+
+        [Command("prefix"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
+        public async Task<RuntimeResult> SetPrefixAsync(string Prefix)
+        {
+            RoGuild guild = await Database.GetGuild(Context.Guild.Id);
+            if (guild == null)
+                return RoWifiResult.FromError("Settings Modification Failed", "Server was not setup. Please ask the server owner to set up this server.");
+
+            UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Set(g => g.CommandPrefix, Prefix);
+            await Database.ModifyGuild(Context.Guild.Id, update);
+            Handler.SetPrefix(Context.Guild.Id, Prefix); 
+
+            EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
+            embed.WithColor(Color.Green).WithTitle("Settings Modification Successful").WithDescription($"The prefix was successfully changed to {Prefix}");
             await ReplyAsync(embed: embed.Build());
             return RoWifiResult.FromSuccess();
         }

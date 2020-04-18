@@ -4,6 +4,7 @@ using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
 using RoWifi_Alpha.Models;
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Threading.Tasks;
 
@@ -15,6 +16,7 @@ namespace RoWifi_Alpha.Utilities
         private readonly CommandService _commands;
         private readonly IServiceProvider _services;
         private readonly DatabaseService _database;
+        private Dictionary<ulong, string> Prefixes;
 
         public CommandHandler(IServiceProvider services)
         {
@@ -30,17 +32,19 @@ namespace RoWifi_Alpha.Utilities
             _commands.CommandExecuted += OnCommandExecutedAsync;
             _commands.Log += LogAsync;
             await _commands.AddModulesAsync(Assembly.GetEntryAssembly(), _services);
+            Prefixes = await _database.GetPrefixes();
         }
 
         private async Task HandleCommandAsync(SocketMessage rawMessage)
         {
             if (!(rawMessage is SocketUserMessage message)) return;
-            //Add Blacklisted Users Handling
-            int argPos = 0;
-            if (!(message.HasCharPrefix('?', ref argPos) || message.HasMentionPrefix(_client.CurrentUser, ref argPos)) || message.Author.IsBot)
-                return;
 
             SocketCommandContext context = new SocketCommandContext(_client, message);
+
+            int argPos = 0;
+            if (!(message.HasStringPrefix(GetPrefix(context.Guild.Id), ref argPos) 
+                    || message.HasMentionPrefix(_client.CurrentUser, ref argPos)) || message.Author.IsBot)
+                return;
 
             if(context.Guild != null)
             {
@@ -73,6 +77,18 @@ namespace RoWifi_Alpha.Utilities
             {
                 await cmdException.Context.Channel.SendMessageAsync("Something went catastrophically wrong!");
             }
+        }
+
+        public string GetPrefix(ulong GuildId)
+        {
+            bool Success = Prefixes.TryGetValue(GuildId, out string Prefix);
+            if (!Success) Prefix = "?";
+            return Prefix;
+        }
+
+        public void SetPrefix(ulong GuildId, string Prefix)
+        {
+            Prefixes[GuildId] = Prefix;
         }
     }
 }

@@ -237,7 +237,7 @@ namespace RoWifi_Alpha.Commands
         }
 
         [Command("multiple"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-        public async Task<RuntimeResult> MultipleAsync(int GroupId, int MinRank, int MaxRank, string Prefix, int Priority, IRole[] Roles)
+        public async Task<RuntimeResult> MultipleAsync(int GroupId, int MinRank, int MaxRank, string Prefix, int Priority, params IRole[] Roles)
         {
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)
@@ -273,7 +273,7 @@ namespace RoWifi_Alpha.Commands
         }
 
         [Command("auto"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-        public async Task<RuntimeResult> AutoRankbindsAsync(int GroupId, int Priority, IRole[] Roles)
+        public async Task<RuntimeResult> AutoRankbindsAsync(int GroupId, int Priority, params IRole[] Roles)
         {
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)

@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Caching.Memory;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using RoWifi_Alpha.Exceptions;
 using RoWifi_Alpha.Models;
@@ -215,6 +216,32 @@ namespace RoWifi_Alpha.Utilities
                 else
                     await _backups.FindOneAndReplaceAsync(b => b.UserId == backup.UserId && b.Name == Name, backup);
                 return true;
+            }
+            catch (Exception e)
+            {
+                throw new RoMongoException(e.Message);
+            }
+        }
+
+        public async Task<Dictionary<ulong, string>> GetPrefixes()
+        {
+            try
+            {
+                FilterDefinition<RoGuild> filter = Builders<RoGuild>.Filter.Empty;
+                ProjectionDefinition<RoGuild> projection = Builders<RoGuild>.Projection.Include(g => g.CommandPrefix);
+                FindOptions<RoGuild, BsonDocument> options = new FindOptions<RoGuild, BsonDocument> { Projection = projection };
+                Dictionary<ulong, string> Prefixes = new Dictionary<ulong, string>();
+
+                using (var cursor = await _guilds.FindAsync(filter, options))
+                {
+                    while (await cursor.MoveNextAsync())
+                    {
+                        var batch = cursor.Current;
+                        foreach (BsonDocument b in batch)
+                            Prefixes.Add((ulong)b["_id"].ToInt64(), b.GetValue("Prefix", "?").AsString);
+                    }
+                }
+                return Prefixes;
             }
             catch (Exception e)
             {

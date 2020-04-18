@@ -13,6 +13,9 @@ namespace RoWifi_Alpha.Models
         [BsonElement("GuildId")]
         public ulong GuildId { get; set; }
 
+        [BsonElement("Prefix")]
+        public string CommandPrefix { get; set; }
+
         [BsonElement("Settings")]
         /// <summary>
         /// The settings of the guild
