@@ -1,6 +1,6 @@
 ﻿using Discord;
-using Discord.Addons.CommandsExtension;
 using Discord.Commands;
+using RoWifi_Alpha.Addons.Help;
 using RoWifi_Alpha.Utilities;
 using System.Threading.Tasks;
 
@@ -14,7 +14,7 @@ namespace RoWifi_Alpha.Commands
         public async Task HelpAsync([Remainder] string Command = null)
         {
             string Prefix = "?";
-            var helpEmbed = commandService.GetDefaultHelpEmbed(Command, Prefix);
+            var helpEmbed = commandService.GetDefaultEmbed(Command, Prefix);
             await ReplyAsync(embed: helpEmbed);
         }
 
