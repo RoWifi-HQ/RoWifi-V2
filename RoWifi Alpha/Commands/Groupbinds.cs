@@ -11,12 +11,14 @@ using System.Threading.Tasks;
 
 namespace RoWifi_Alpha.Commands
 {
-    [Group("groupbinds")]
+    [Group("groupbinds"), Alias("gb")]
+    [Summary("Module to access groupbinds of a server")]
     public class Groupbinds : InteractiveBase<SocketCommandContext>
     {
         public DatabaseService Database { get; set; }
 
         [Command(RunMode = RunMode.Async), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
+        [Summary("Command to view groupbinds of a server")]
         public async Task<RuntimeResult> ViewGroupbindsAsync() 
         {
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
@@ -42,7 +44,9 @@ namespace RoWifi_Alpha.Commands
         }
 
         [Command("new"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-        public async Task<RuntimeResult> NewGroupbindAsync(int GroupId, params IRole[] Roles)
+        [Summary("Command to add a new groupbind")]
+        public async Task<RuntimeResult> NewGroupbindAsync([Summary("The Id of the Group to create a bind with")]int GroupId, 
+            [Summary("The Roles to bind to the bind")]params IRole[] Roles)
         {
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)
@@ -64,7 +68,8 @@ namespace RoWifi_Alpha.Commands
         }
 
         [Command("delete"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-        public async Task<RuntimeResult> DeleteAsync(int GroupId)
+        [Summary("Command to delete a groupbind")]
+        public async Task<RuntimeResult> DeleteAsync([Summary("The Id of the Group to create a bind with")]int GroupId)
         {
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)
@@ -84,12 +89,15 @@ namespace RoWifi_Alpha.Commands
         }
 
         [Group("modify")]
+        [Summary("Module to modify groupbinds")]
         public class ModifyGroupbinds : ModuleBase<SocketCommandContext>
         {
             public DatabaseService Database { get; set; }
 
             [Command("roles-add"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-            public async Task<RuntimeResult> AddRolesAsync(int GroupId, params IRole[] Roles)
+            [Summary("Command to add roles to the groupbind")]
+            public async Task<RuntimeResult> AddRolesAsync([Summary("The Id of the Group to create a bind with")]int GroupId, 
+                [Summary("The Roles to add to the bind")]params IRole[] Roles)
             {
                 RoGuild guild = await Database.GetGuild(Context.Guild.Id);
                 if (guild == null)
@@ -109,7 +117,9 @@ namespace RoWifi_Alpha.Commands
             }
 
             [Command("roles-remove"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-            public async Task<RuntimeResult> RemoveRolesAsync(int GroupId, params IRole[] Roles)
+            [Summary("Command to remove roles from the bind")]
+            public async Task<RuntimeResult> RemoveRolesAsync([Summary("The Id of the Group to create a bind with")] int GroupId, 
+                [Summary("The Roles to remove from the bind")]params IRole[] Roles)
             {
                 RoGuild guild = await Database.GetGuild(Context.Guild.Id);
                 if (guild == null)

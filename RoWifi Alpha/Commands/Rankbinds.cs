@@ -16,12 +16,15 @@ using System;
 namespace RoWifi_Alpha.Commands
 {
     [Group("rankbinds")]
+    [Alias("rb")]
+    [Summary("Module to access rankbinds of a server")]
     public class Rankbinds : InteractiveBase<SocketCommandContext>
     {
         public DatabaseService Database { get; set; }
         public RobloxService Roblox { get; set; }
 
         [Command(RunMode = RunMode.Async), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
+        [Summary("Command to view rankbinds of a server")]
         public async Task<RuntimeResult> ViewRankbindsAsync()
         {
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
@@ -52,7 +55,12 @@ namespace RoWifi_Alpha.Commands
         }
 
         [Command("new"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-        public async Task<RuntimeResult> NewRankbindAsync(int GroupId, int RankId, string Prefix, int Priority, params IRole[] Roles)
+        [Summary("Command to add a new rankbind")]
+        public async Task<RuntimeResult> NewRankbindAsync([Summary("Id of the Group to bind")]int GroupId, 
+            [Summary("The Rank Id of the Group to bind [0-255]")]int RankId, 
+            [Summary("The prefix to be used before the nickname")]string Prefix, 
+            [Summary("The deciding factor for the prefix conflict between two roles")]int Priority, 
+            [Summary("The Discord Roles to be added to the bind")]params IRole[] Roles)
         {
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)
@@ -76,7 +84,9 @@ namespace RoWifi_Alpha.Commands
         }
 
         [Command("delete"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-        public async Task<RuntimeResult> DeleteAsync(int GroupId, int RankId)
+        [Summary("Command to delete a rankbind")]
+        public async Task<RuntimeResult> DeleteAsync([Summary("Id of the Group")]int GroupId, 
+            [Summary("The Rank Id of the Group to delete")]int RankId)
         {
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)
@@ -95,12 +105,16 @@ namespace RoWifi_Alpha.Commands
         }
 
         [Group("modify")]
+        [Summary("Module to modify rankbinds of the server")]
         public class ModifyRankbinds : ModuleBase<SocketCommandContext>
         {
             public DatabaseService Database { get; set; }
 
             [Command("prefix"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-            public async Task<RuntimeResult> ModifyPrefixAsync(int GroupId, int RankId, string Prefix)
+            [Summary("Command to modify the prefix of a rankbind")]
+            public async Task<RuntimeResult> ModifyPrefixAsync([Summary("The Id of the Group")]int GroupId, 
+                [Summary("The Rank Id of the group to modify")]int RankId, 
+                [Summary("The new prefix of the bind")]string Prefix)
             {
                 RoGuild guild = await Database.GetGuild(Context.Guild.Id);
                 if (guild == null)
@@ -120,7 +134,10 @@ namespace RoWifi_Alpha.Commands
             }
 
             [Command("priority"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-            public async Task<RuntimeResult> ModifyPriorityAsync(int GroupId, int RankId, int Priority)
+            [Summary("Command to modify the priority of a rankbind")]
+            public async Task<RuntimeResult> ModifyPriorityAsync([Summary("The Id of the Group")]int GroupId,
+                [Summary("The Rank Id of the group to modify")]int RankId, 
+                [Summary("The new priority of the bind")]int Priority)
             {
                 RoGuild guild = await Database.GetGuild(Context.Guild.Id);
                 if (guild == null)
@@ -140,7 +157,10 @@ namespace RoWifi_Alpha.Commands
             }
 
             [Command("roles-add"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-            public async Task<RuntimeResult> ModifyRolesAddAsync(int GroupId, int RankId, params IRole[] Roles)
+            [Summary("Command to add roles to a bind")]
+            public async Task<RuntimeResult> ModifyRolesAddAsync([Summary("The Id of the Group")]int GroupId,
+                [Summary("The Rank Id of the group to modify")]int RankId, 
+                [Summary("The roles to be added to the bind")]params IRole[] Roles)
             {
                 RoGuild guild = await Database.GetGuild(Context.Guild.Id);
                 if (guild == null)
@@ -160,7 +180,10 @@ namespace RoWifi_Alpha.Commands
             }
 
             [Command("roles-remove"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-            public async Task<RuntimeResult> ModifyRolesRemoveAsync(int GroupId, int RankId, params IRole[] Roles)
+            [Summary("Command to remove roles from a rankbinds")]
+            public async Task<RuntimeResult> ModifyRolesRemoveAsync([Summary("The Id of the Group")]int GroupId,
+                [Summary("The Rank Id of the group to modify")]int RankId, 
+                [Summary("The roles to be removed from the group")]params IRole[] Roles)
             {
                 RoGuild guild = await Database.GetGuild(Context.Guild.Id);
                 if (guild == null)
@@ -181,6 +204,7 @@ namespace RoWifi_Alpha.Commands
         }
 
         [Command("create", RunMode = RunMode.Async), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
+        [Summary("Interactive Command to create a bind")]
         public async Task<RuntimeResult> CreateRankbindAsync()
         {
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
@@ -237,7 +261,13 @@ namespace RoWifi_Alpha.Commands
         }
 
         [Command("multiple"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-        public async Task<RuntimeResult> MultipleAsync(int GroupId, int MinRank, int MaxRank, string Prefix, int Priority, params IRole[] Roles)
+        [Summary("Command to add a range of rankbinds")]
+        public async Task<RuntimeResult> MultipleAsync([Summary("Id of the Roblox Group")]int GroupId, 
+            [Summary("Rank Id from which to create binds")]int MinRank, 
+            [Summary("Rank Id till which to create binds")]int MaxRank, 
+            [Summary("The prefix to be used before the nickname")]string Prefix, 
+            [Summary("The deciding factor for the prefix conflict between two roles")]int Priority, 
+            [Summary("The Roles to be added to the bind")]params IRole[] Roles)
         {
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)
@@ -273,7 +303,10 @@ namespace RoWifi_Alpha.Commands
         }
 
         [Command("auto"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-        public async Task<RuntimeResult> AutoRankbindsAsync(int GroupId, int Priority, params IRole[] Roles)
+        [Summary("Command to auto add rankbinds from the Roblox Group")]
+        public async Task<RuntimeResult> AutoRankbindsAsync([Summary("Id of the Roblox Group")]int GroupId, 
+            [Summary("The deciding factor for the prefix conflict between two roles")]int Priority, 
+            [Summary("The Roles to be added to the binds")]params IRole[] Roles)
         {
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)

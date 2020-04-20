@@ -10,18 +10,21 @@ using PremiumType = RoWifi_Alpha.Models.PremiumType;
 namespace RoWifi_Alpha.Commands
 {
     [Group("backup")]
+    [Summary("Module to save and restore server binds in the database")]
     public class Backups : InteractiveBase<SocketCommandContext>
     {
         public DatabaseService Database { get; set; }
 
         [Command, RequireContext(ContextType.Guild), RequireRoWifiAdmin]
+        [Summary("Command to view the saved backups")]
         public async Task ViewBackupAsync()
         {
             await ReplyAsync("Command WIP");
         }
 
         [Command("new"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-        public async Task<RuntimeResult> NewBackupAsync(string Name)
+        [Summary("Command to add a new backup to the database")]
+        public async Task<RuntimeResult> NewBackupAsync([Summary("The keyword to associate the backup to")]string Name)
         {
             Premium premium = await Database.GetPremium(Context.User.Id);
             if (premium == null || premium.PType != PremiumType.Beta)
@@ -39,7 +42,8 @@ namespace RoWifi_Alpha.Commands
 
         [Command("restore"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
         [RequireBotPermission(GuildPermission.ManageRoles)]
-        public async Task<RuntimeResult> RestoreAsync(string Name)
+        [Summary("Command to load the saved backup into the server")]
+        public async Task<RuntimeResult> RestoreAsync([Summary("The keyword to associate the backup to")]string Name)
         {
             Premium premium = await Database.GetPremium(Context.User.Id);
             if (premium == null)

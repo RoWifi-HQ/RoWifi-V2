@@ -9,12 +9,14 @@ using System.Threading.Tasks;
 namespace RoWifi_Alpha.Commands
 {
     [Group("settings")]
+    [Summary("Command to access settings of a server")]
     public class Settings : ModuleBase<SocketCommandContext>
     {
         public DatabaseService Database { get; set; }
         public CommandHandler Handler { get; set; }
 
         [Command, RequireContext(ContextType.Guild), RequireRoWifiAdmin]
+        [Summary("Command to view settings of a server")]
         public async Task<RuntimeResult> ViewSettingsAsync()
         {
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
@@ -38,7 +40,8 @@ namespace RoWifi_Alpha.Commands
         }
 
         [Command("verification"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-        public async Task<RuntimeResult> VerificationAsync(IRole Role)
+        [Summary("Command to set the unverified role of the server")]
+        public async Task<RuntimeResult> VerificationAsync([Summary("The role to set as the unverified role")]IRole Role)
         {
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)
@@ -54,7 +57,8 @@ namespace RoWifi_Alpha.Commands
         }
 
         [Command("verified"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-        public async Task<RuntimeResult> VerifiedAsync(IRole Role)
+        [Summary("Command to set the verified role of the server")]
+        public async Task<RuntimeResult> VerifiedAsync([Summary("The Role to set as the Verified Role")]IRole Role)
         {
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)
@@ -70,6 +74,7 @@ namespace RoWifi_Alpha.Commands
         }
 
         [Command("disable-commands"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
+        [Summary("Command to disable commands in a channel")]
         public async Task<RuntimeResult> DisableCommandsAsync()
         {
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
@@ -87,6 +92,7 @@ namespace RoWifi_Alpha.Commands
         }
 
         [Command("enable-commands"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
+        [Summary("Command to disable commands in a server")]
         public async Task<RuntimeResult> EnableCommandsAsync()
         {
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
@@ -104,7 +110,8 @@ namespace RoWifi_Alpha.Commands
         }
 
         [Command("prefix"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-        public async Task<RuntimeResult> SetPrefixAsync(string Prefix)
+        [Summary("Command to change the command prefix of the bot")]
+        public async Task<RuntimeResult> SetPrefixAsync([Summary("The key to set as the command prefix")]string Prefix)
         {
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)

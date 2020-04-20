@@ -20,6 +20,8 @@ namespace RoWifi_Alpha.Commands
         public LoggerService Logger { get; set; }
 
         [Command("setup", RunMode = RunMode.Async), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
+        [Summary("Command to start configuration of the server")]
+        [Alias("reset")]
         public async Task<RuntimeResult> SetupAsync()
         {
             RoGuild guild = new RoGuild(Context.Guild.Id);
@@ -44,6 +46,7 @@ namespace RoWifi_Alpha.Commands
         }
 
         [Command("update-all", RunMode = RunMode.Async), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
+        [Summary("Command to update all verified users in a server")]
         public async Task<RoWifiResult> UpdateAllAsync()
         {
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
@@ -54,41 +57,44 @@ namespace RoWifi_Alpha.Commands
             await ReplyAsync("Updating Verifed Users...");
             
             IGuild server = Context.Guild;
-            Dictionary<ulong, IGuildUser> AllDiscordUsers = (await server.GetUsersAsync()).ToDictionary(x => x.Id, x => x);
-            IEnumerable<RoUser> VerifiedUsers = await Database.GetUsersAsync(AllDiscordUsers.Keys);
-            var BypassRoleId = server.Roles.Where(r => r != null).Where(r => r.Name == "RoWifi Bypass").FirstOrDefault()?.Id ?? 0;
-            foreach (RoUser user in VerifiedUsers)
+            _ = Task.Run(async () =>
             {
-                try
+                Dictionary<ulong, IGuildUser> AllDiscordUsers = (await server.GetUsersAsync()).ToDictionary(x => x.Id, x => x);
+                IEnumerable<RoUser> VerifiedUsers = await Database.GetUsersAsync(AllDiscordUsers.Keys);
+                var BypassRoleId = server.Roles.Where(r => r != null).Where(r => r.Name == "RoWifi Bypass").FirstOrDefault()?.Id ?? 0;
+                foreach (RoUser user in VerifiedUsers)
                 {
-                    if (AllDiscordUsers[user.DiscordId].RoleIds.Contains(BypassRoleId)) continue;
-                    (List<ulong> AddedRoles, List<ulong> RemovedRoles, string DiscNick) = await user.UpdateAsync(Roblox, server, guild,
-                        AllDiscordUsers[user.DiscordId], "Mass Update");
-
-                    if (AddedRoles.Count > 0 || RemovedRoles.Count > 0)
+                    try
                     {
-                        string AddStr = "";
-                        foreach (ulong item in AddedRoles)
-                            AddStr += $"- <@&{item}>\n";
-                        string RemoveStr = "";
-                        foreach (ulong item in RemovedRoles)
-                            RemoveStr += $"- <@&{item}>\n";
+                        if (AllDiscordUsers[user.DiscordId].RoleIds.Contains(BypassRoleId)) continue;
+                        (List<ulong> AddedRoles, List<ulong> RemovedRoles, string DiscNick) = await user.UpdateAsync(Roblox, server, guild,
+                            AllDiscordUsers[user.DiscordId], "Mass Update");
 
-                        AddStr = AddStr.Length == 0 ? "None" : AddStr;
-                        RemoveStr = RemoveStr.Length == 0 ? "None" : RemoveStr;
-                        DiscNick = DiscNick.Length == 0 ? "None" : DiscNick;
+                        if (AddedRoles.Count > 0 || RemovedRoles.Count > 0)
+                        {
+                            string AddStr = "";
+                            foreach (ulong item in AddedRoles)
+                                AddStr += $"- <@&{item}>\n";
+                            string RemoveStr = "";
+                            foreach (ulong item in RemovedRoles)
+                                RemoveStr += $"- <@&{item}>\n";
 
-                        EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
-                        embed.WithTitle($"Mass Update [{AllDiscordUsers[user.DiscordId].Nickname}]")
-                            .AddField("Nickname", DiscNick)
-                            .AddField("Added Roles", AddStr)
-                            .AddField("Removed Roles", RemoveStr);
-                        await Logger.LogServer(server, embed.Build());
+                            AddStr = AddStr.Length == 0 ? "None" : AddStr;
+                            RemoveStr = RemoveStr.Length == 0 ? "None" : RemoveStr;
+                            DiscNick = DiscNick.Length == 0 ? "None" : DiscNick;
+
+                            EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
+                            embed.WithTitle($"Mass Update [{AllDiscordUsers[user.DiscordId].Nickname}]")
+                                .AddField("Nickname", DiscNick)
+                                .AddField("Added Roles", AddStr)
+                                .AddField("Removed Roles", RemoveStr);
+                            await Logger.LogServer(server, embed.Build());
+                        }
                     }
+                    catch (Exception) { }
                 }
-                catch (Exception) { }
-            }
-            await ReplyAsync("All Verified Users have been updated successfully");
+                await ReplyAsync("All Verified Users have been updated successfully");
+            });
             return RoWifiResult.FromSuccess();
         }
     }

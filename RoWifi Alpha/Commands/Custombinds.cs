@@ -13,13 +13,15 @@ using System.Threading.Tasks;
 
 namespace RoWifi_Alpha.Commands
 {
-    [Group("custombinds")]
+    [Group("custombinds"), Alias("cb")]
+    [Summary("Module to access custombinds of a server")]
     public class Custombinds : InteractiveBase<SocketCommandContext>
     {
         public DatabaseService Database { get; set; }
         public RobloxService Roblox { get; set; }
 
         [Command(RunMode = RunMode.Async), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
+        [Summary("Command to view the custombinds of a server")]
         public async Task<RuntimeResult> ViewCustombindsAsync()
         {
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
@@ -47,7 +49,8 @@ namespace RoWifi_Alpha.Commands
         }
 
         [Command("new", RunMode = RunMode.Async), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-        public async Task<RuntimeResult> NewCustombindAsync([Remainder]string Code)
+        [Summary("Command to add a new custombind to the server")]
+        public async Task<RuntimeResult> NewCustombindAsync([Remainder, Summary("The custom code to define the bind")]string Code)
         {
             RoUser user = await Database.GetUserAsync(Context.User.Id);
             if (user == null)
@@ -105,7 +108,8 @@ namespace RoWifi_Alpha.Commands
         }
 
         [Command("delete"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-        public async Task<RuntimeResult> DeleteCustombindAsync(int Id)
+        [Summary("Command to delete an existing custombind")]
+        public async Task<RuntimeResult> DeleteCustombindAsync([Summary("The Id of the assigned custombind")]int Id)
         {
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)
@@ -128,14 +132,17 @@ namespace RoWifi_Alpha.Commands
             return RoWifiResult.FromSuccess();
         }
 
-        [Group("modify")]
+        [Group("modify"), Alias("m")]
+        [Summary("Module to modify existing custombinds")]
         public class ModifyCustombinds : ModuleBase<SocketCommandContext>
         {
             public DatabaseService Database { get; set; }
             public RobloxService Roblox { get; set; }
 
             [Command("prefix"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-            public async Task<RuntimeResult> ModifyPrefixAsync(int Id, string Prefix)
+            [Summary("Command to modify the prefix of a custombind")]
+            public async Task<RuntimeResult> ModifyPrefixAsync([Summary("The Id of the assigned custombind")]int Id, 
+                [Summary("The new prefix to be assigned")]string Prefix)
             {
                 RoGuild guild = await Database.GetGuild(Context.Guild.Id);
                 if (guild == null)
@@ -156,7 +163,9 @@ namespace RoWifi_Alpha.Commands
             }
 
             [Command("priority"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-            public async Task<RuntimeResult> ModifyPriorityAsync(int Id, int Priority)
+            [Summary("Command to modify priority of a custombind")]
+            public async Task<RuntimeResult> ModifyPriorityAsync([Summary("The Id of the assigned custombind")] int Id, 
+                [Summary("The new priority to be assigned")]int Priority)
             {
                 RoGuild guild = await Database.GetGuild(Context.Guild.Id);
                 if (guild == null)
@@ -177,7 +186,9 @@ namespace RoWifi_Alpha.Commands
             }
 
             [Command("code"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-            public async Task<RuntimeResult> ModifyCodeAsync(int Id, [Remainder] string Code)
+            [Summary("Command to modify the code of a custombind")]
+            public async Task<RuntimeResult> ModifyCodeAsync([Summary("The Id of the assigned custombind")] int Id, 
+                [Remainder, Summary("The new custom code to be assigned")] string Code)
             {
                 RoGuild guild = await Database.GetGuild(Context.Guild.Id);
                 if (guild == null)
@@ -214,7 +225,9 @@ namespace RoWifi_Alpha.Commands
             }
 
             [Command("roles-add"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-            public async Task<RuntimeResult> AddRolesAsync(int Id, params IRole[] Roles)
+            [Summary("Command to add roles to a custombind")]
+            public async Task<RuntimeResult> AddRolesAsync([Summary("The Id of the assigned custombind")] int Id, 
+                [Summary("The Roles to bind to the bind")]params IRole[] Roles)
             {
                 RoGuild guild = await Database.GetGuild(Context.Guild.Id);
                 if (guild == null)
@@ -235,7 +248,9 @@ namespace RoWifi_Alpha.Commands
             }
 
             [Command("roles-remove"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-            public async Task<RuntimeResult> RemoveRolesAsync(int Id, params IRole[] Roles)
+            [Summary("Command to remove binded roles from a custombind")]
+            public async Task<RuntimeResult> RemoveRolesAsync([Summary("The Id of the assigned custombind")] int Id, 
+                [Summary("The roles to remove from the bind")]params IRole[] Roles)
             {
                 RoGuild guild = await Database.GetGuild(Context.Guild.Id);
                 if (guild == null)

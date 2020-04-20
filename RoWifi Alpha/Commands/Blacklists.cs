@@ -14,12 +14,14 @@ using System.Threading.Tasks;
 namespace RoWifi_Alpha.Commands
 {
     [Group("blacklists")]
+    [Summary("Module to blacklist users from a server")]
     public class Blacklists : InteractiveBase<SocketCommandContext>
     {
         public DatabaseService Database { get; set; }
         public RobloxService Roblox { get; set; }
 
         [Command(RunMode = RunMode.Async), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
+        [Summary("View users blacklisted from the server")]
         public async Task<RuntimeResult> ViewBlacklistAsync()
         {
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
@@ -52,7 +54,9 @@ namespace RoWifi_Alpha.Commands
         }
 
         [Command("name"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-        public async Task<RuntimeResult> BlacklistNameAsync(string Name, [Remainder] string Reason)
+        [Summary("Command to blacklist a user from Roblox Username")]
+        public async Task<RuntimeResult> BlacklistNameAsync([Summary("The Roblox Username of the user to blacklist")] string Name, 
+            [Remainder, Summary("The reason to blacklist the user for")] string Reason)
         {
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)
@@ -75,7 +79,9 @@ namespace RoWifi_Alpha.Commands
         }
 
         [Command("group"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-        public async Task<RuntimeResult> BlacklistGroupAsync(int Id, [Remainder] string Reason)
+        [Summary("Command to blacklist an entire group")]
+        public async Task<RuntimeResult> BlacklistGroupAsync([Summary("The Id of the Roblox group to blacklist")]int Id, 
+            [Remainder, Summary("The reason to blacklist the group for")] string Reason)
         {
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)
@@ -94,7 +100,8 @@ namespace RoWifi_Alpha.Commands
         }
 
         [Command("custom", RunMode = RunMode.Async), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-        public async Task<RuntimeResult> BlacklistCustomAsync([Remainder] string Code)
+        [Summary("Command to create your own blacklists")]
+        public async Task<RuntimeResult> BlacklistCustomAsync([Remainder, Summary("The custom code to define the blacklist")] string Code)
         {
             RoUser user = await Database.GetUserAsync(Context.User.Id);
             if (user == null)
@@ -133,7 +140,8 @@ namespace RoWifi_Alpha.Commands
         }
 
         [Command("remove"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-        public async Task<RuntimeResult> BlacklistDeleteAsync([Remainder] string Id)
+        [Summary("Command to remove a blacklist")]
+        public async Task<RuntimeResult> BlacklistDeleteAsync([Remainder, Summary("The Id of the assigned blacklist")] string Id)
         {
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)

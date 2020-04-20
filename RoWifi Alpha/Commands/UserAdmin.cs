@@ -22,7 +22,7 @@ namespace RoWifi_Alpha.Commands
 
         [Command("verify", RunMode = RunMode.Async), RequireContext(ContextType.Guild)]
         [Summary("Command to link Roblox Account to Discord Account")]
-        public async Task<RuntimeResult> VerifyAsync(string RobloxName = "")
+        public async Task<RuntimeResult> VerifyAsync([Summary("The Roblox Username to bind to the Discord Account")]string RobloxName = "")
         {
             EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
             RoUser user = await Database.GetUserAsync(Context.User.Id);
@@ -78,7 +78,7 @@ namespace RoWifi_Alpha.Commands
 
         [Command("reverify"), RequireContext(ContextType.Guild)]
         [Summary("Command to change linked Roblox Account")]
-        public async Task<RuntimeResult> ReverifyAsync(string RobloxName = "")
+        public async Task<RuntimeResult> ReverifyAsync([Summary("The Roblox Username to bind to the Discord Account")]string RobloxName = "")
         {
             RoUser user = await Database.GetUserAsync(Context.User.Id);
             if (user != null)
@@ -137,7 +137,7 @@ namespace RoWifi_Alpha.Commands
         [RequireBotPermission(GuildPermission.ManageRoles | GuildPermission.ManageNicknames, 
             ErrorMessage = "I cannot update users as I need the following permissions: Manage Roles, Manage Nicknames.")]
         [Summary("Command to update a user's roles")]
-        public async Task<RuntimeResult> UpdateAsync(IGuildUser member = null)
+        public async Task<RuntimeResult> UpdateAsync([Summary("The User to be updated")]IGuildUser member = null)
         {
             if (member == null)
                 member = (IGuildUser)Context.User;
@@ -190,7 +190,7 @@ namespace RoWifi_Alpha.Commands
         }
 
         [Command("userinfo"), RequireContext(ContextType.Guild)]
-        public async Task<RuntimeResult> UserInfoAsync(IGuildUser member = null)
+        public async Task<RuntimeResult> UserInfoAsync([Summary("The User whose info is to be viewed")]IGuildUser member = null)
         {
             if (member == null)
                 member = Context.User as IGuildUser;

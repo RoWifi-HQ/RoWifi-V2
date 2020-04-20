@@ -10,12 +10,14 @@ using PremiumType = RoWifi_Alpha.Models.PremiumType;
 namespace RoWifi_Alpha.Commands
 {
     [Group("premium")]
+    [Summary("Module to access premium of servers")]
     public class PremiumAdmin : ModuleBase<SocketCommandContext>
     {
         public DatabaseService Database { get; set; }
         public PatreonService Patreon { get; set; }
 
         [Command("redeem"), RequireContext(ContextType.Guild)]
+        [Summary("Command to enable premium features to a server")]
         public async Task<RoWifiResult> RedeemAsync()
         {
             Premium premium = await Database.GetPremium(Context.User.Id);
@@ -65,6 +67,7 @@ namespace RoWifi_Alpha.Commands
         }
 
         [Command("remove"), RequireContext(ContextType.Guild)]
+        [Summary("Command to revoke premium features from a server")]
         public async Task<RuntimeResult> RemoveAsync()
         {
             Premium premium = await Database.GetPremium(Context.User.Id);
