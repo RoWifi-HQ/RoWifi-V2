@@ -1,4 +1,5 @@
 ﻿using Discord;
+using Discord.Addons.Hosting;
 using Discord.Commands;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
@@ -6,11 +7,12 @@ using RoWifi_Alpha.Models;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace RoWifi_Alpha.Utilities
 {
-    public class CommandHandler
+    public class CommandHandler : InitializedService
     {
         private readonly DiscordSocketClient _client;
         private readonly CommandService _commands;
@@ -26,7 +28,7 @@ namespace RoWifi_Alpha.Utilities
             _database = services.GetRequiredService<DatabaseService>();
         }
 
-        public async Task InitializeAsync()
+        public override async Task InitializeAsync(CancellationToken token)
         {
             _client.MessageReceived += HandleCommandAsync;
             _commands.CommandExecuted += OnCommandExecutedAsync;

@@ -8,13 +8,17 @@
 
   <ItemGroup>
     <PackageReference Include="Coravel" Version="3.6.1" />
+    <PackageReference Include="Discord.Addons.Hosting" Version="2.1.0" />
     <PackageReference Include="Discord.Net.Commands" Version="2.3.0-dev-20200417.1" />
     <PackageReference Include="Discord.Net.Core" Version="2.3.0-dev-20200417.1" />
     <PackageReference Include="Discord.Net.Rest" Version="2.3.0-dev-20200417.1" />
     <PackageReference Include="Discord.Net.Webhook" Version="2.3.0-dev-20200417.1" />
     <PackageReference Include="Discord.Net.WebSocket" Version="2.3.0-dev-20200417.1" />
+    <PackageReference Include="Google.Cloud.Logging.V2" Version="3.0.0" />
+    <PackageReference Include="Google.Cloud.Monitoring.V3" Version="2.0.0" />
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="5.0.0-preview.2.20160.3" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="5.0.0-preview.2.20160.3" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="5.0.0-preview.2.20160.3" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="5.0.0-preview.2.20160.3" />
     <PackageReference Include="MongoDB.Driver" Version="2.11.0-beta1" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />

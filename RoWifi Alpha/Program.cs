@@ -1,6 +1,5 @@
 ﻿using Discord;
 using RoWifi_Alpha.Addons.Interactive;
-using Discord.Commands;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
 using RoWifi_Alpha.Services;
@@ -9,6 +8,9 @@ using System;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Coravel;
+using Microsoft.Extensions.Hosting;
+using Discord.Addons.Hosting;
+using Discord.Addons.Hosting.Reliability;
 
 namespace RoWifi_Alpha
 {
@@ -19,50 +21,54 @@ namespace RoWifi_Alpha
 
         public async Task MainAsync()
         {
-            using (var services = ConfigureServices())
-            {
-                DiscordSocketClient client = services.GetRequiredService<DiscordSocketClient>();
-                client.Log += LogAsync;
-                services.GetRequiredService<CommandService>().Log += LogAsync;
-
-                await client.LoginAsync(TokenType.Bot, Environment.GetEnvironmentVariable("DiscToken"));
-                await client.StartAsync();
-
-                services.UseScheduler(scheduler =>
+            var builder = Host.CreateDefaultBuilder()
+                .ConfigureDiscordHost<DiscordSocketClient>((context, config) =>
                 {
-                    scheduler.Schedule<AutoDetection>()
-                        .Cron("00 */3 * * *");
-                });
+                    config.SetToken(Environment.GetEnvironmentVariable("DiscToken"));
+                    config.SetDiscordConfiguration(new DiscordSocketConfig
+                    {
+                        AlwaysDownloadUsers = true,
+                        LogLevel = LogSeverity.Verbose
+                    });
+                })
+                .UseCommandService()
+                .ConfigureServices(services =>
+                {
+                    services.AddSingleton<CommandHandler>()
+                    .AddSingleton<IHostedService>(s => s.GetService<CommandHandler>())
+                    .AddSingleton<HttpClient>()
+                    .AddSingleton<InteractiveService>()
+                    .AddSingleton<DatabaseService>()
+                    .AddSingleton<LoggerService>();
 
-                await services.GetRequiredService<CommandHandler>().InitializeAsync();
-                await Task.Delay(-1);
+                    services.AddHttpClient<RobloxService>();
+                    services.AddHttpClient<PatreonService>();
+                    services.AddMemoryCache();
+
+                    services.AddScheduler();
+                })
+                .UseConsoleLifetime();
+
+            IHost host = builder.Build();
+
+            host.Services.UseScheduler(scheduler =>
+            {
+                scheduler.OnWorker("CPU Intensive");
+                scheduler.Schedule<AutoDetection>()
+                    .Cron("00 */3 * * *");
+                scheduler.OnWorker("Logging");
+                scheduler.Schedule<LoggerService>()
+                    .EveryFifteenSeconds();
+            })
+            .OnError((exception) =>
+            {
+                Console.WriteLine(exception.Message);
+            });
+
+            using (host)
+            {
+                await host.RunReliablyAsync();
             }
-        }
-
-        private Task LogAsync(LogMessage log)
-        {
-            Console.WriteLine(log.ToString());
-            return Task.CompletedTask;
-        }
-
-        private ServiceProvider ConfigureServices()
-        {
-            var services = new ServiceCollection()
-                .AddSingleton<DiscordSocketClient>()
-                .AddSingleton<CommandService>()
-                .AddSingleton<CommandHandler>()
-                .AddSingleton<HttpClient>()
-                .AddSingleton<InteractiveService>()
-                .AddSingleton<DatabaseService>()
-                .AddSingleton<LoggerService>();
-
-            services.AddHttpClient<RobloxService>();
-            services.AddHttpClient<PatreonService>();
-            services.AddMemoryCache();
-
-            services.AddScheduler();
-
-            return services.BuildServiceProvider();
         }
     }
 }
