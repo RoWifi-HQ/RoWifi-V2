@@ -4,6 +4,7 @@ using MongoDB.Driver;
 using RoWifi_Alpha.Addons.Interactive;
 using RoWifi_Alpha.Models;
 using RoWifi_Alpha.Preconditions;
+using RoWifi_Alpha.Services;
 using RoWifi_Alpha.Utilities;
 using System.Collections.Generic;
 using System.Linq;
@@ -16,6 +17,7 @@ namespace RoWifi_Alpha.Commands
     public class Groupbinds : InteractiveBase<SocketCommandContext>
     {
         public DatabaseService Database { get; set; }
+        public LoggerService Logger { get; set; }
 
         [Command(RunMode = RunMode.Async), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
         [Summary("Command to view groupbinds of a server")]
@@ -64,6 +66,7 @@ namespace RoWifi_Alpha.Commands
             embed.WithColor(Color.Green).WithTitle("Bind Addition Successful")
                 .AddField($"Group: {GroupId}", $"Roles: {string.Concat(bind.DiscordRoles.Select(r => $" <@&{ r}> "))}", true);
             await ReplyAsync(embed: embed.Build());
+            await Logger.LogAction(Context.Guild, Context.User, "Group Bind Addition", $"Group Id: {bind.GroupId}", $"Roles: {string.Concat(bind.DiscordRoles.Select(r => $" <@&{ r}> "))}");
             return RoWifiResult.FromSuccess();
         }
 
@@ -85,6 +88,7 @@ namespace RoWifi_Alpha.Commands
             EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
             embed.WithColor(Color.Green).WithTitle("Bind Deletion Successful").WithDescription($"The bind with Group Id {GroupId} was successfully deleted");
             await ReplyAsync(embed: embed.Build());
+            await Logger.LogAction(Context.Guild, Context.User, "Group Bind Deletion", $"Group Id: {bind.GroupId}", $"Roles: {string.Concat(bind.DiscordRoles.Select(r => $" <@&{ r}> "))}");
             return RoWifiResult.FromSuccess();
         }
 
@@ -93,6 +97,7 @@ namespace RoWifi_Alpha.Commands
         public class ModifyGroupbinds : ModuleBase<SocketCommandContext>
         {
             public DatabaseService Database { get; set; }
+            public LoggerService Logger { get; set; }
 
             [Command("roles-add"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
             [Summary("Command to add roles to the groupbind")]
@@ -113,6 +118,7 @@ namespace RoWifi_Alpha.Commands
                 EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
                 embed.WithColor(Color.Green).WithTitle("Bind Modification Successful").WithDescription($"The new roles were successfully added");
                 await ReplyAsync(embed: embed.Build());
+                await Logger.LogAction(Context.Guild, Context.User, "Group Bind Modification - Added Roles", $"Group Id: {bind.GroupId}", $"Added Roles: {string.Concat(Roles.Select(r => $" <@&{ r}> "))}");
                 return RoWifiResult.FromSuccess();
             }
 
@@ -135,6 +141,7 @@ namespace RoWifi_Alpha.Commands
                 EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
                 embed.WithColor(Color.Green).WithTitle("Bind Modification Successful").WithDescription($"The new roles were successfully added");
                 await ReplyAsync(embed: embed.Build());
+                await Logger.LogAction(Context.Guild, Context.User, "Group Bind Modification - Removed Roles", $"Group Id: {bind.GroupId}", $"Removed Roles: {string.Concat(Roles.Select(r => $" <@&{ r}> "))}");
                 return RoWifiResult.FromSuccess();
             }
         }

@@ -3,6 +3,7 @@ using Discord.Commands;
 using MongoDB.Driver;
 using RoWifi_Alpha.Models;
 using RoWifi_Alpha.Preconditions;
+using RoWifi_Alpha.Services;
 using RoWifi_Alpha.Utilities;
 using System.Threading.Tasks;
 
@@ -14,6 +15,7 @@ namespace RoWifi_Alpha.Commands
     {
         public DatabaseService Database { get; set; }
         public CommandHandler Handler { get; set; }
+        public LoggerService Logger { get; set; }
 
         [Command, RequireContext(ContextType.Guild), RequireRoWifiAdmin]
         [Summary("Command to view settings of a server")]
@@ -53,6 +55,7 @@ namespace RoWifi_Alpha.Commands
             embed.WithColor(Color.Green).WithTitle("Settings Modification Successful")
                 .AddField($"Verification Role", $"<@&{Role.Id}>", true);
             await ReplyAsync(embed: embed.Build());
+            await Logger.LogAction(Context.Guild, Context.User, "Settings Modification", "New Verification Role", $" <@&{Role.Id}> ");
             return RoWifiResult.FromSuccess();
         }
 
@@ -70,6 +73,7 @@ namespace RoWifi_Alpha.Commands
             embed.WithColor(Color.Green).WithTitle("Settings Modification Successful")
                 .AddField($"Verified Role", $"<@&{Role.Id}>", true);
             await ReplyAsync(embed: embed.Build());
+            await Logger.LogAction(Context.Guild, Context.User, "Settings Modification", "New Verified Role", $" <@&{Role.Id}> ");
             return RoWifiResult.FromSuccess();
         }
 

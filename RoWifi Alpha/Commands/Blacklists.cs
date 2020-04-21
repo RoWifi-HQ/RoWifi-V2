@@ -5,6 +5,7 @@ using MongoDB.Driver;
 using RoWifi_Alpha.Addons.Interactive;
 using RoWifi_Alpha.Models;
 using RoWifi_Alpha.Preconditions;
+using RoWifi_Alpha.Services;
 using RoWifi_Alpha.Utilities;
 using System;
 using System.Collections.Generic;
@@ -19,6 +20,7 @@ namespace RoWifi_Alpha.Commands
     {
         public DatabaseService Database { get; set; }
         public RobloxService Roblox { get; set; }
+        public LoggerService Logger { get; set; }
 
         [Command(RunMode = RunMode.Async), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
         [Summary("View users blacklisted from the server")]
@@ -56,7 +58,7 @@ namespace RoWifi_Alpha.Commands
         [Command("name"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
         [Summary("Command to blacklist a user from Roblox Username")]
         public async Task<RuntimeResult> BlacklistNameAsync([Summary("The Roblox Username of the user to blacklist")] string Name, 
-            [Remainder, Summary("The reason to blacklist the user for")] string Reason)
+            [Remainder, Summary("The reason to blacklist the user for")] string Reason = "")
         {
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)
@@ -72,9 +74,10 @@ namespace RoWifi_Alpha.Commands
             UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Push(g => g.Blacklists, blacklist);
             await Database.ModifyGuild(Context.Guild.Id, update);
             EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
-            embed.WithColor(Color.Green).WithTitle("Bind Addition Successful")
+            embed.WithColor(Color.Green).WithTitle("Blacklist Addition Successful")
                 .AddField($"Id: {blacklist.Id}", $"Type: Id\nReason: {blacklist.Reason}");
             await ReplyAsync(embed: embed.Build());
+            await Logger.LogAction(Context.Guild, Context.User, "Blacklist Addition", $"Id: {blacklist.Id}", $"Type: Id\nReason: {blacklist.Reason}");
             return RoWifiResult.FromSuccess();
         }
 
@@ -93,9 +96,10 @@ namespace RoWifi_Alpha.Commands
             UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Push(g => g.Blacklists, blacklist);
             await Database.ModifyGuild(Context.Guild.Id, update);
             EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
-            embed.WithColor(Color.Green).WithTitle("Bind Addition Successful")
+            embed.WithColor(Color.Green).WithTitle("Blacklist Addition Successful")
                 .AddField($"Id: {blacklist.Id}", $"Type: Group\nReason: {blacklist.Reason}");
             await ReplyAsync(embed: embed.Build());
+            await Logger.LogAction(Context.Guild, Context.User, "Blacklist Addition", $"Id: {blacklist.Id}", $"Type: Group\nReason: {blacklist.Reason}");
             return RoWifiResult.FromSuccess();
         }
 
@@ -136,6 +140,7 @@ namespace RoWifi_Alpha.Commands
             embed.WithColor(Color.Green).WithTitle("Bind Addition Successful")
                 .AddField($"Id: {blacklist.Id}", $"Type: Custom\nReason: {blacklist.Reason}");
             await ReplyAsync(embed: embed.Build());
+            await Logger.LogAction(Context.Guild, Context.User, "Blacklist Addition", $"Id: {blacklist.Id}", $"Type: Custom\nReason: {blacklist.Reason}");
             return RoWifiResult.FromSuccess();
         }
 
@@ -155,6 +160,7 @@ namespace RoWifi_Alpha.Commands
             EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
             embed.WithColor(Color.Green).WithTitle("Blacklist Removeal Successful").WithDescription($"The blacklist with Id {Id} was successfully deleted");
             await ReplyAsync(embed: embed.Build());
+            await Logger.LogAction(Context.Guild, Context.User, "Blacklist Deletion", $"Id: {blacklist.Id}", $"Reason: {blacklist.Reason}");
             return RoWifiResult.FromSuccess();
         }
     }

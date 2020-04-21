@@ -5,6 +5,7 @@ using MongoDB.Driver;
 using RoWifi_Alpha.Addons.Interactive;
 using RoWifi_Alpha.Models;
 using RoWifi_Alpha.Preconditions;
+using RoWifi_Alpha.Services;
 using RoWifi_Alpha.Utilities;
 using System;
 using System.Collections.Generic;
@@ -19,6 +20,7 @@ namespace RoWifi_Alpha.Commands
     {
         public DatabaseService Database { get; set; }
         public RobloxService Roblox { get; set; }
+        public LoggerService Logger { get; set; }
 
         [Command(RunMode = RunMode.Async), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
         [Summary("Command to view the custombinds of a server")]
@@ -104,6 +106,7 @@ namespace RoWifi_Alpha.Commands
             embed.WithColor(Color.Green).WithTitle("Bind Addition Successful")
                 .AddField($"Bind Id: {Bind.Id}", $"Code: {Bind.Code}\nPrefix: {Bind.Prefix}\nPriority: {Bind.Priority}\nRoles: {string.Concat(Bind.DiscordRoles.Select(r => $" <@&{ r}> "))}", true);
             await ReplyAsync(embed: embed.Build());
+            await Logger.LogAction(Context.Guild, Context.User, "Custom Bind Addition", $"Bind Id: {Bind.Id}", $"Code: {Bind.Code}\nPrefix: {Bind.Prefix}\nPriority: {Bind.Priority}\nRoles: {string.Concat(Bind.DiscordRoles.Select(r => $" <@&{ r}> "))}");
             return RoWifiResult.FromSuccess();
         }
 
@@ -119,16 +122,17 @@ namespace RoWifi_Alpha.Commands
             if (guild.CustomBinds == null || guild.CustomBinds.Count == 0)
                 return RoWifiResult.FromError("Bind Deletion Failed", "This server has no custombinds to delete");
 
-            CustomBind bind = guild.CustomBinds.Where(c => c.Id == Id).FirstOrDefault();
-            if (bind == null)
+            CustomBind Bind = guild.CustomBinds.Where(c => c.Id == Id).FirstOrDefault();
+            if (Bind == null)
                 return RoWifiResult.FromError("Bind Deletion Failed", $"A bind with {Id} as Id does not exist");
 
-            UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Pull(g => g.CustomBinds, bind);
+            UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Pull(g => g.CustomBinds, Bind);
             await Database.ModifyGuild(Context.Guild.Id, update);
 
             EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
             embed.WithColor(Color.Green).WithTitle("Bind Deletion Successful").WithDescription($"The bind with Id {Id} was successfully deleted");
             await ReplyAsync(embed: embed.Build());
+            await Logger.LogAction(Context.Guild, Context.User, "Custom Bind Deletion", $"Bind Id: {Bind.Id}", $"Code: {Bind.Code}\nPrefix: {Bind.Prefix}\nPriority: {Bind.Priority}\nRoles: {string.Concat(Bind.DiscordRoles.Select(r => $" <@&{ r}> "))}");
             return RoWifiResult.FromSuccess();
         }
 
@@ -138,6 +142,7 @@ namespace RoWifi_Alpha.Commands
         {
             public DatabaseService Database { get; set; }
             public RobloxService Roblox { get; set; }
+            public LoggerService Logger { get; set; }
 
             [Command("prefix"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
             [Summary("Command to modify the prefix of a custombind")]
@@ -149,8 +154,8 @@ namespace RoWifi_Alpha.Commands
                     return RoWifiResult.FromError("Bind Modification Failed", "Server was not setup. Please ask the server owner to set up this server.");
                 if (guild.Settings.Type != GuildType.Beta)
                     return RoWifiResult.FromError("Bind Modification Failed", "This module may only be used on Beta Tier servers");
-                CustomBind bind = guild.CustomBinds.Where(c => c.Id == Id).FirstOrDefault();
-                if (bind == null)
+                CustomBind Bind = guild.CustomBinds.Where(c => c.Id == Id).FirstOrDefault();
+                if (Bind == null)
                     return RoWifiResult.FromError("Bind Modification Failed", "A bind with the given Id does not exist");
 
                 FilterDefinition<RoGuild> filter = Builders<RoGuild>.Filter.Where(g => g.GuildId == Context.Guild.Id && g.CustomBinds.Any(r => r.Id == Id));
@@ -159,6 +164,7 @@ namespace RoWifi_Alpha.Commands
                 EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
                 embed.WithColor(Color.Green).WithTitle("Bind Modification Successful").WithDescription($"The prefix was successfully modified");
                 await ReplyAsync(embed: embed.Build());
+                await Logger.LogAction(Context.Guild, Context.User, "Custom Bind Modification - Prefix", $"Bind Id: {Bind.Id}", $"Old Prefix: {Bind.Prefix}\nNew Prefix: {Prefix}");
                 return RoWifiResult.FromSuccess();
             }
 
@@ -172,8 +178,8 @@ namespace RoWifi_Alpha.Commands
                     return RoWifiResult.FromError("Bind Modification Failed", "Server was not setup. Please ask the server owner to set up this server.");
                 if (guild.Settings.Type != GuildType.Beta)
                     return RoWifiResult.FromError("Bind Modification Failed", "This module may only be used on Beta Tier servers");
-                CustomBind bind = guild.CustomBinds.Where(c => c.Id == Id).FirstOrDefault();
-                if (bind == null)
+                CustomBind Bind = guild.CustomBinds.Where(c => c.Id == Id).FirstOrDefault();
+                if (Bind == null)
                     return RoWifiResult.FromError("Bind Modification Failed", "A bind with the given Id does not exist");
 
                 FilterDefinition<RoGuild> filter = Builders<RoGuild>.Filter.Where(g => g.GuildId == Context.Guild.Id && g.CustomBinds.Any(r => r.Id == Id));
@@ -182,6 +188,7 @@ namespace RoWifi_Alpha.Commands
                 EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
                 embed.WithColor(Color.Green).WithTitle("Bind Modification Successful").WithDescription($"The priority was successfully modified");
                 await ReplyAsync(embed: embed.Build());
+                await Logger.LogAction(Context.Guild, Context.User, "Custom Bind Modification - Priority", $"Bind Id: {Bind.Id}", $"Old Priority: {Bind.Priority}\nNew Prefix: {Priority}");
                 return RoWifiResult.FromSuccess();
             }
 
@@ -221,6 +228,7 @@ namespace RoWifi_Alpha.Commands
                 EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
                 embed.WithColor(Color.Green).WithTitle("Bind Modification Successful").WithDescription($"The code was successfully modified");
                 await ReplyAsync(embed: embed.Build());
+                await Logger.LogAction(Context.Guild, Context.User, "Custom Bind Modification - Code", $"Bind Id: {bind.Id}", $"Old Code: {bind.Code}\nNew Prefix: {Code}");
                 return RoWifiResult.FromSuccess();
             }
 
@@ -244,6 +252,7 @@ namespace RoWifi_Alpha.Commands
                 EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
                 embed.WithColor(Color.Green).WithTitle("Bind Modification Successful").WithDescription($"The priority was successfully modified");
                 await ReplyAsync(embed: embed.Build());
+                await Logger.LogAction(Context.Guild, Context.User, "Custom Bind Modification - Added Roles", $"Bind Id: {bind.Id}", $"Added Roles: {string.Concat(Roles.Select(r => $" <@&{ r}> "))}");
                 return RoWifiResult.FromSuccess();
             }
 
@@ -267,6 +276,7 @@ namespace RoWifi_Alpha.Commands
                 EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
                 embed.WithColor(Color.Green).WithTitle("Bind Modification Successful").WithDescription($"The priority was successfully modified");
                 await ReplyAsync(embed: embed.Build());
+                await Logger.LogAction(Context.Guild, Context.User, "Custom Bind Modification - Added Roles", $"Bind Id: {bind.Id}", $"Removed Roles: {string.Concat(Roles.Select(r => $" <@&{ r}> "))}");
                 return RoWifiResult.FromSuccess();
             }
         }

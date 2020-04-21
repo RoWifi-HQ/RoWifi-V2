@@ -12,6 +12,7 @@ using System.Text.RegularExpressions;
 using MongoDB.Driver;
 using Discord.WebSocket;
 using System;
+using RoWifi_Alpha.Services;
 
 namespace RoWifi_Alpha.Commands
 {
@@ -22,6 +23,7 @@ namespace RoWifi_Alpha.Commands
     {
         public DatabaseService Database { get; set; }
         public RobloxService Roblox { get; set; }
+        public LoggerService Logger { get; set; }
 
         [Command(RunMode = RunMode.Async), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
         [Summary("Command to view rankbinds of a server")]
@@ -73,13 +75,14 @@ namespace RoWifi_Alpha.Commands
             if (RankInfo == null)
                 return RoWifiResult.FromError("Bind Addition Failed", $"The Rank {RankId} does not exist in Group {GroupId}");
 
-            RankBind NewBind = new RankBind { GroupId = GroupId, RbxRankId = RankId, RbxGrpRoleId = (int)RankInfo["id"], Prefix = Prefix, Priority = Priority, DiscordRoles = Roles.Select(r => r.Id).ToArray() };
-            UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Push(r => r.RankBinds, NewBind);
+            RankBind bind = new RankBind { GroupId = GroupId, RbxRankId = RankId, RbxGrpRoleId = (int)RankInfo["id"], Prefix = Prefix, Priority = Priority, DiscordRoles = Roles.Select(r => r.Id).ToArray() };
+            UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Push(r => r.RankBinds, bind);
             await Database.ModifyGuild(Context.Guild.Id, update);
             EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
             embed.WithColor(Color.Green).WithTitle("Bind Addition Successful")
-                .AddField($"Rank: {NewBind.RbxRankId}", $"Prefix: {NewBind.Prefix}\nPriority: {NewBind.Priority}\nRoles: {string.Concat(NewBind.DiscordRoles.Select(r => $" <@&{ r}> "))}", true);
+                .AddField($"Rank: {bind.RbxRankId}", $"Prefix: {bind.Prefix}\nPriority: {bind.Priority}\nRoles: {string.Concat(bind.DiscordRoles.Select(r => $" <@&{ r}> "))}", true);
             await ReplyAsync(embed: embed.Build());
+            await Logger.LogAction(Context.Guild, Context.User, $"Rank Bind Addition - Group {bind.GroupId}", $"Rank Id: {bind.RbxRankId}", $"Prefix: {bind.Prefix}\nPriority: {bind.Priority}\nRoles: {string.Concat(bind.DiscordRoles.Select(r => $" <@&{ r}> "))}");
             return RoWifiResult.FromSuccess();
         }
 
@@ -101,6 +104,7 @@ namespace RoWifi_Alpha.Commands
             EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
             embed.WithColor(Color.Green).WithTitle("Bind Deletion Successful").WithDescription($"The bind with Group Id {GroupId} & Rank Id {RankId} was successfully deleted");
             await ReplyAsync(embed: embed.Build());
+            await Logger.LogAction(Context.Guild, Context.User, $"Rank Bind Deletion - Group {bind.GroupId}", $"Rank Id: {bind.RbxRankId}", $"Prefix: {bind.Prefix}\nPriority: {bind.Priority}\nRoles: {string.Concat(bind.DiscordRoles.Select(r => $" <@&{ r}> "))}");
             return RoWifiResult.FromSuccess();
         }
 
@@ -109,6 +113,7 @@ namespace RoWifi_Alpha.Commands
         public class ModifyRankbinds : ModuleBase<SocketCommandContext>
         {
             public DatabaseService Database { get; set; }
+            public LoggerService Logger { get; set; }
 
             [Command("prefix"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
             [Summary("Command to modify the prefix of a rankbind")]
@@ -130,6 +135,7 @@ namespace RoWifi_Alpha.Commands
                 EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
                 embed.WithColor(Color.Green).WithTitle("Bind Modification Successful").WithDescription($"The prefix was successfully modified");
                 await ReplyAsync(embed: embed.Build());
+                await Logger.LogAction(Context.Guild, Context.User, "Rank Bind Modification - Prefix", $"Group Id: {bind.GroupId}", $"Rank Id: {bind.RbxRankId}\nOld Prefix: {bind.Prefix}\nNew Prefix: {Prefix}");
                 return RoWifiResult.FromSuccess();
             }
 
@@ -153,6 +159,7 @@ namespace RoWifi_Alpha.Commands
                 EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
                 embed.WithColor(Color.Green).WithTitle("Bind Modification Successful").WithDescription($"The priority was successfully modified");
                 await ReplyAsync(embed: embed.Build());
+                await Logger.LogAction(Context.Guild, Context.User, "Rank Bind Modification - Priority", $"Group Id: {bind.GroupId}", $"Rank Id: {bind.RbxRankId}\nOld Priority: {bind.Priority}\nNew Priority: {Priority}");
                 return RoWifiResult.FromSuccess();
             }
 
@@ -176,6 +183,7 @@ namespace RoWifi_Alpha.Commands
                 EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
                 embed.WithColor(Color.Green).WithTitle("Bind Modification Successful").WithDescription($"The new roles were successfully added");
                 await ReplyAsync(embed: embed.Build());
+                await Logger.LogAction(Context.Guild, Context.User, "Rank Bind Modification - Added Roles", $"Group Id: {bind.GroupId}", $"Rank Id: {bind.RbxRankId}\nAdded Roles: {string.Concat(Roles.Select(r => $" <@&{ r}> "))}");
                 return RoWifiResult.FromSuccess();
             }
 
@@ -199,6 +207,7 @@ namespace RoWifi_Alpha.Commands
                 EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
                 embed.WithColor(Color.Green).WithTitle("Bind Modification Successful").WithDescription($"The new roles were successfully added");
                 await ReplyAsync(embed: embed.Build());
+                await Logger.LogAction(Context.Guild, Context.User, "Rank Bind Modification - Removed Roles", $"Group Id: {bind.GroupId}", $"Rank Id: {bind.RbxRankId}\nRemoved Roles: {string.Concat(Roles.Select(r => $" <@&{ r}> "))}");
                 return RoWifiResult.FromSuccess();
             }
         }
@@ -250,13 +259,14 @@ namespace RoWifi_Alpha.Commands
                 return RoWifiResult.FromError("Bind Addition Failed", "Command has been cancelled. Try again");
             var Roles = response.MentionedRoles.ToArray();
 
-            RankBind NewBind = new RankBind { GroupId = GroupId, RbxRankId = RankId, RbxGrpRoleId = (int)RankInfo["id"], Prefix = Prefix, Priority = Priority, DiscordRoles = Roles.Select(r => r.Id).ToArray() };
-            UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Push(r => r.RankBinds, NewBind);
+            RankBind bind = new RankBind { GroupId = GroupId, RbxRankId = RankId, RbxGrpRoleId = (int)RankInfo["id"], Prefix = Prefix, Priority = Priority, DiscordRoles = Roles.Select(r => r.Id).ToArray() };
+            UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Push(r => r.RankBinds, bind);
             await Database.ModifyGuild(Context.Guild.Id, update);
             EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
             embed.WithColor(Color.Green).WithTitle("Bind Addition Successful")
-                .AddField($"Rank: {NewBind.RbxRankId}", $"Prefix: {NewBind.Prefix}\nPriority: {NewBind.Priority}\nRoles: {string.Concat(NewBind.DiscordRoles.Select(r => $" <@&{ r}> "))}", true);
+                .AddField($"Rank: {bind.RbxRankId}", $"Prefix: {bind.Prefix}\nPriority: {bind.Priority}\nRoles: {string.Concat(bind.DiscordRoles.Select(r => $" <@&{ r}> "))}", true);
             await ReplyAsync(embed: embed.Build());
+            await Logger.LogAction(Context.Guild, Context.User, $"Rank Bind Addition - Group {bind.GroupId}", $"Rank Id: {bind.RbxRankId}", $"Prefix: {bind.Prefix}\nPriority: {bind.Priority}\nRoles: {string.Concat(bind.DiscordRoles.Select(r => $" <@&{ r}> "))}");
             return RoWifiResult.FromSuccess();
         }
 
