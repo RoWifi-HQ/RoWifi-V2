@@ -36,11 +36,11 @@ namespace RoWifi_Alpha.Utilities.RoLang
         {
             bool Flip = Match(TokenType.NOT);
             List<Literal> args = new List<Literal>();
-            if (Match(TokenType.HAS_RANK, TokenType.IS_IN_GROUP))
+            if (Match(TokenType.HAS_RANK, TokenType.IS_IN_GROUP, TokenType.WITH_STRING, TokenType.HAS_ROLE))
             {
                 Token oper = Previous();
                 Consume(TokenType.LEFT_PAREN, "Expected a ( after function");
-                while (Match(TokenType.NUMBER))
+                while (Match(TokenType.NUMBER, TokenType.STRING))
                 {
                     args.Add(new Literal(Previous().literal));
                 }

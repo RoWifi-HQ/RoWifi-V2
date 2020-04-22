@@ -46,6 +46,7 @@ namespace RoWifi_Alpha.Utilities.RoLang
                 case '(': AddToken(TokenType.LEFT_PAREN); break;
                 case ')': AddToken(TokenType.RIGHT_PAREN); break;
                 //Ignore whitespace
+                case '"': String(); break;
                 case ' ': 
                 case ',': 
                 case '\r':
@@ -112,6 +113,15 @@ namespace RoWifi_Alpha.Utilities.RoLang
             bool Success = Keywords.TryGetValue(text, out TokenType type);
             if (!Success) throw new Exception("Expected Keyword");
             AddToken(type);
+        }
+
+        private void String()
+        {
+            while (Peek() != '"') Advance();
+            if (IsAtEnd()) throw new Exception("Missing quotes");
+            string text = source[(start + 2) ..current];
+            Advance();
+            AddToken(TokenType.STRING, text);
         }
     }
 }
