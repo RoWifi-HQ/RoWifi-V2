@@ -3,7 +3,10 @@ using Discord.Addons.Hosting;
 using Discord.Commands;
 using Discord.WebSocket;
 using Microsoft.Extensions.DependencyInjection;
+using RoWifi_Alpha.Addons.Help;
+using RoWifi_Alpha.Exceptions;
 using RoWifi_Alpha.Models;
+using RoWifi_Alpha.Services;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
@@ -18,6 +21,8 @@ namespace RoWifi_Alpha.Utilities
         private readonly CommandService _commands;
         private readonly IServiceProvider _services;
         private readonly DatabaseService _database;
+        private readonly LoggerService _logger;
+
         private Dictionary<ulong, string> Prefixes;
 
         public CommandHandler(IServiceProvider services)
@@ -26,6 +31,7 @@ namespace RoWifi_Alpha.Utilities
             _commands = services.GetRequiredService<CommandService>();
             _services = services;
             _database = services.GetRequiredService<DatabaseService>();
+            _logger = services.GetRequiredService<LoggerService>();
         }
 
         public override async Task InitializeAsync(CancellationToken token)
@@ -60,16 +66,28 @@ namespace RoWifi_Alpha.Utilities
 
         private async Task OnCommandExecutedAsync(Optional<CommandInfo> command, ICommandContext context, IResult result)
         {
-            switch (result)
+            if (result is RoWifiResult res)
             {
-                case RoWifiResult res:
-                    if (res.Error != null)
-                        await context.Channel.SendMessageAsync(embed: res.embed);
-                    break;
-                default:
-                    if (!string.IsNullOrEmpty(result.ErrorReason))
+                if (res.Error != null)
+                    await context.Channel.SendMessageAsync(embed: res.embed);
+            }
+            else if (result.Error.HasValue)
+            {
+                var err = result.Error.Value;
+                switch(err)
+                {
+                    case CommandError.BadArgCount:
+                    {
+                        var helpEmbed = _commands.GetDefaultEmbed(command.Value.Name);
+                        await context.Channel.SendMessageAsync("Invalid Command Usage. Activating help...", embed: helpEmbed);
+                        break;
+                    }
+                    case CommandError.Exception:
+                        break;
+                    default:
                         await context.Channel.SendMessageAsync(result.ErrorReason);
-                    break;
+                        break;
+                }
             }
         }
 
@@ -77,7 +95,18 @@ namespace RoWifi_Alpha.Utilities
         {
             if (logMessage.Exception is CommandException cmdException)
             {
-                await cmdException.Context.Channel.SendMessageAsync("Something went catastrophically wrong!");
+                if (cmdException.InnerException is RoMongoException)
+                    await cmdException.Context.Channel.SendMessageAsync("There was a problem in saving to the database. Pleas contact @Gautam.A#9539 immediately.");
+                else if (cmdException.InnerException is RobloxException)
+                    await cmdException.Context.Channel.SendMessageAsync("There seems to be an error while interacting with the Roblox API. Please try again in a few minutes");
+                else
+                {
+                    await cmdException.Context.Channel.SendMessageAsync("Something went catastrophically wrong! Please contact our support server immediately");
+                    await _logger.LogDebug($"`Message: {cmdException.InnerException.Message}\n" +
+                        $"Command: {cmdException.Context.Message.Content}\n" +
+                        $"Source: {cmdException.InnerException.Source}\n" +
+                        $"Stack Trace: {cmdException.InnerException.StackTrace}");
+                }
             }
         }
 

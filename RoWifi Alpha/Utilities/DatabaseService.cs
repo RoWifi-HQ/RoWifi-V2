@@ -40,7 +40,8 @@ namespace RoWifi_Alpha.Utilities
                     IAsyncCursor<RoUser> cursor = await _users.FindAsync(u => u.DiscordId == DiscordId);
                     user = cursor.FirstOrDefault();
                     var cacheOptions = new MemoryCacheEntryOptions()
-                        .SetAbsoluteExpiration(TimeSpan.FromMinutes(15));
+                        .SetSlidingExpiration(TimeSpan.FromMinutes(10))
+                        .SetAbsoluteExpiration(TimeSpan.FromMinutes(60));
                     _cache.Set(DiscordId, user, cacheOptions);
                 }
                 return user;
@@ -73,6 +74,10 @@ namespace RoWifi_Alpha.Utilities
                     await _users.InsertOneAsync(user);
                 else
                     await _users.ReplaceOneAsync(u => u.DiscordId == user.DiscordId, user);
+                var cacheOptions = new MemoryCacheEntryOptions()
+                        .SetSlidingExpiration(TimeSpan.FromMinutes(10))
+                        .SetAbsoluteExpiration(TimeSpan.FromMinutes(60));
+                _cache.Set(user.DiscordId, user, cacheOptions);
             }
             catch (Exception e)
             {
@@ -92,6 +97,10 @@ namespace RoWifi_Alpha.Utilities
                 {
                     await _guilds.ReplaceOneAsync(g => g.GuildId == guild.GuildId, guild);
                 }
+                var cacheOptions = new MemoryCacheEntryOptions()
+                        .SetSlidingExpiration(TimeSpan.FromMinutes(10))
+                        .SetAbsoluteExpiration(TimeSpan.FromMinutes(60));
+                _cache.Set(guild.GuildId, guild, cacheOptions);
                 return true;
             }
             catch (Exception e)
@@ -109,7 +118,8 @@ namespace RoWifi_Alpha.Utilities
                     IAsyncCursor<RoGuild> cursor = await _guilds.FindAsync(u => u.GuildId == GuildId);
                     guild = cursor.FirstOrDefault();
                     var cacheOptions = new MemoryCacheEntryOptions()
-                        .SetAbsoluteExpiration(TimeSpan.FromMinutes(15));
+                        .SetSlidingExpiration(TimeSpan.FromMinutes(10))
+                        .SetAbsoluteExpiration(TimeSpan.FromMinutes(60));
                     _cache.Set(GuildId, guild, cacheOptions);
                 }
                 return guild;
