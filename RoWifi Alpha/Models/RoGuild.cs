@@ -105,5 +105,18 @@ namespace RoWifi_Alpha.Models
         public string Id { get; set; }
         public string Reason { get; set; }
         public BlacklistType Type { get; set; }
+
+        [BsonIgnore]
+        public RoCommand Cmd;
+
+        [BsonConstructor]
+        public RoBlacklist(string Id, string Reason, BlacklistType Type)
+        {
+            this.Id = Id;
+            this.Reason = Reason;
+            this.Type = Type;
+            if (this.Type == BlacklistType.Custom)
+                this.Cmd = new RoCommand(this.Id);
+        }
     }
 }

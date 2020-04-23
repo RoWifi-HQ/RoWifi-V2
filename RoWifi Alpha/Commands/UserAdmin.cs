@@ -187,6 +187,10 @@ namespace RoWifi_Alpha.Commands
             {
                 return RoWifiResult.FromRobloxError("Update Failed");
             }
+            catch(BlacklistException)
+            {
+                return RoWifiResult.FromError("Update Failed", "User was found on the server blacklist");
+            }
         }
 
         [Command("userinfo"), RequireContext(ContextType.Guild)]

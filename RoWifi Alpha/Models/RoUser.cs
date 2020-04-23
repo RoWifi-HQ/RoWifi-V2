@@ -1,5 +1,6 @@
 ﻿using Discord;
 using MongoDB.Bson.Serialization.Attributes;
+using RoWifi_Alpha.Exceptions;
 using RoWifi_Alpha.Utilities;
 using System;
 using System.Collections.Generic;
@@ -33,6 +34,22 @@ namespace RoWifi_Alpha.Models
             List<GroupBind> GroupBindsToAdd = new List<GroupBind>();
             List<CustomBind> CustomBindsToAdd = new List<CustomBind>();
 
+            RoCommandUser CommandUser = new RoCommandUser(this, member, userRoleIds, RobloxName);
+
+            if (guild.Blacklists != null)
+            {
+                bool Success = guild.Blacklists.Any(b => b.Cmd.Evaluate(CommandUser));
+                if (Success)
+                {
+                    try 
+                    { 
+                        await server.AddBanAsync(member, reason: "User was found on a server blacklist"); 
+                    } catch(Exception) { }
+                    throw new BlacklistException("User was found on the server blacklist");
+                }
+            }
+
+
             foreach (KeyValuePair<int, int> Rank in userRoleIds)
             {
                 RankBind rBind = guild.RankBinds.Where(r => r.GroupId == Rank.Key && r.RbxRankId == Rank.Value).FirstOrDefault();
@@ -49,7 +66,6 @@ namespace RoWifi_Alpha.Models
                     RankBindsToAdd.Add(Bind);
             }
 
-            RoCommandUser CommandUser = new RoCommandUser(this, member, userRoleIds, RobloxName);
             if(guild.CustomBinds != null)
             {
                 foreach (CustomBind bind in guild.CustomBinds)
