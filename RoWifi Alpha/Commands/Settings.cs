@@ -29,14 +29,15 @@ namespace RoWifi_Alpha.Commands
             if (guild.Settings.Type == GuildType.Beta) Tier = "Beta";
 
             EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
-            embed.AddField("Guild Id", $"{Context.Guild.Id}")
-                .AddField("Member Count", $"{Context.Guild.MemberCount}")
-                .AddField("Shard Id", $"{Context.Client.ShardId}")
-                .AddField("Settings", $"Tier: {Tier}\nAutoDetection: {guild.Settings.AutoDetection}")
-                .AddField("Verification Role", $"<@&{guild.VerificationRole}>")
-                .AddField("Verified Role", $"<@&{guild.VerifiedRole}>")
-                .AddField("Rankbinds", $"{guild.RankBinds.Count}")
-                .AddField("Groupbinds", $"{guild.GroupBinds.Count}");
+            embed.AddField("Guild Id", $"{Context.Guild.Id}", true)
+                .AddField("Member Count", $"{Context.Guild.MemberCount}", true)
+                .AddField("Shard Id", $"{Context.Client.ShardId}", true)
+                .AddField("Settings", $"Tier: {Tier}\nAutoDetection: {guild.Settings.AutoDetection}", true)
+                .AddField("Prefix", $"{guild.CommandPrefix ?? "!"}", true)
+                .AddField("Verification Role", $"<@&{guild.VerificationRole}>", true)
+                .AddField("Verified Role", $"<@&{guild.VerifiedRole}>", true)
+                .AddField("Rankbinds", $"{guild.RankBinds.Count}", true)
+                .AddField("Groupbinds", $"{guild.GroupBinds.Count}", true);
             await ReplyAsync(embed: embed.Build());
             return RoWifiResult.FromSuccess();
         }

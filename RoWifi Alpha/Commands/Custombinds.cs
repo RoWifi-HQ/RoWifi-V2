@@ -40,13 +40,16 @@ namespace RoWifi_Alpha.Commands
             foreach (List<CustomBind> CBS in CustomBindsList)
             {
                 EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
-                embed.WithTitle("Rankbinds").WithDescription($"Page {Page}");
+                embed.WithTitle("Rankbinds").WithDescription($"Page - {Page}");
                 foreach (CustomBind Bind in CBS)
                     embed.AddField($"Bind Id: {Bind.Id}", $"Code: {Bind.Code}\nPrefix: {Bind.Prefix}\nPriority: {Bind.Priority}\nRoles: {string.Concat(Bind.DiscordRoles.Select(r => $" <@&{ r}> "))}", true);
                 embeds.Add(embed);
                 Page++;
             }
-            await PagedReplyAsync(embeds);
+            if (Page == 2)
+                await ReplyAsync(embed: embeds[0].Build());
+            else
+                await PagedReplyAsync(embeds);
             return RoWifiResult.FromSuccess();
         }
 
@@ -99,7 +102,11 @@ namespace RoWifi_Alpha.Commands
             if (guild == null)
                 Id = guild.CustomBinds.OrderBy(c => c.Id).Last().Id + 1;
             CustomBind Bind = new CustomBind(Id, Code, Prefix, Priority, Roles.Select(r => r.Id).ToArray());
-            UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Push(g => g.CustomBinds, Bind);
+            UpdateDefinition<RoGuild> update;
+            if (guild.CustomBinds == null)
+                update = Builders<RoGuild>.Update.Set(g => g.CustomBinds, new List<CustomBind>() { Bind });
+            else
+                update = Builders<RoGuild>.Update.Push(g => g.CustomBinds, Bind);
             await Database.ModifyGuild(Context.Guild.Id, update);
 
             EmbedBuilder embed = Miscellanous.GetDefaultEmbed();

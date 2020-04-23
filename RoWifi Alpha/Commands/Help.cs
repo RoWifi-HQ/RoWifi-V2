@@ -1,8 +1,11 @@
 ﻿using Discord;
 using Discord.Commands;
 using RoWifi_Alpha.Addons.Help;
+using RoWifi_Alpha.Models;
 using RoWifi_Alpha.Utilities;
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using PremiumType = RoWifi_Alpha.Models.PremiumType;
 
 namespace RoWifi_Alpha.Commands
 {
@@ -10,15 +13,16 @@ namespace RoWifi_Alpha.Commands
     {
         public CommandService commandService { get; set; }
 
+        public DatabaseService Database { get; set; }
+
         [Command("help")]
         public async Task HelpAsync([Remainder] string Command = null)
         {
-            string Prefix = "?";
-            var helpEmbed = commandService.GetDefaultEmbed(Command, Prefix);
+            var helpEmbed = commandService.GetDefaultEmbed(Command);
             await ReplyAsync(embed: helpEmbed);
         }
 
-        [Command("support")]
+        [Command("support"), Alias("invite")]
         public async Task SupportAsync()
         {
             string DiscLink = "https://www.discord.gg/h4BGGyR";
@@ -27,6 +31,14 @@ namespace RoWifi_Alpha.Commands
             embed.AddField("Support Server", $"To know more about announcements, updates and other stuff: [Click Here]({DiscLink})")
                 .AddField("Invite Link", $"To invite the bot into your server: [Click Here]({InviteLink})");
             await ReplyAsync(embed: embed.Build());
+        }
+
+        [Command("partner-add"), RequireOwner]
+        public async Task AddPartnerAsync(IGuildUser user)
+        {
+            Premium premium = new Premium { DiscordId = user.Id, PatreonId = 0, DiscordServers = new List<ulong>(), PType = PremiumType.Beta };
+            bool Success = await Database.AddPremium(premium);
+            await ReplyAsync(Success ? "Success" : "Failure");
         }
     }
 }

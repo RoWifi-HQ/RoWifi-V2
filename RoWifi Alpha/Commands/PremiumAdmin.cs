@@ -17,8 +17,8 @@ namespace RoWifi_Alpha.Commands
         public PatreonService Patreon { get; set; }
 
         [Command("redeem"), RequireContext(ContextType.Guild)]
-        [Summary("Command to enable premium features to a server")]
-        public async Task<RoWifiResult> RedeemAsync()
+        [Summary("Command to enable premium features of a server")]
+        public async Task<RuntimeResult> RedeemAsync()
         {
             Premium premium = await Database.GetPremium(Context.User.Id);
             if (premium == null)
@@ -88,6 +88,7 @@ namespace RoWifi_Alpha.Commands
             await Database.ModifyPremium(Context.User.Id, update2);
             EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
             embed.WithTitle("Premium Disable Successful").WithDescription($"Removed premium features from {Context.Guild.Name}");
+            await ReplyAsync(embed: embed.Build());
             return RoWifiResult.FromSuccess();
         }
     }

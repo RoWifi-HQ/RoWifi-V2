@@ -43,15 +43,19 @@ namespace RoWifi_Alpha.Commands
                 foreach (RoBlacklist blacklist in guild.Blacklists)
                 {
                     if (blacklist.Type == BlacklistType.Name)
-                        embed.AddField($"Id: {blacklist.Id}", $"Type: Id\nReason: {blacklist.Reason}");
+                        embed.AddField($"Id: {blacklist.Id}", $"Type: Id\nReason: {blacklist.Reason}", true);
                     else if (blacklist.Type == BlacklistType.Group)
-                        embed.AddField($"Id: {blacklist.Id}", $"Type: Group\nReason: {blacklist.Reason}");
+                        embed.AddField($"Id: {blacklist.Id}", $"Type: Group\nReason: {blacklist.Reason}", true);
                     else if (blacklist.Type == BlacklistType.Custom)
-                        embed.AddField($"Code: {blacklist.Id}", $"Type: Custom\nReason: {blacklist.Reason}");
+                        embed.AddField($"Code: {blacklist.Id}", $"Type: Custom\nReason: {blacklist.Reason}", true);
                 }
                 embeds.Add(embed);
+                Page++;
             }
-            await PagedReplyAsync(embeds);
+            if (Page == 2)
+                await ReplyAsync(embed: embeds[0].Build());
+            else
+                await PagedReplyAsync(embeds);
             return RoWifiResult.FromSuccess();
         }
 
@@ -70,7 +74,7 @@ namespace RoWifi_Alpha.Commands
             if (Reason.Length == 0)
                 Reason = "N/A";
 
-            RoBlacklist blacklist = new RoBlacklist { Id = RobloxId.ToString(), Reason = Reason, Type = BlacklistType.Name };
+            RoBlacklist blacklist = new RoBlacklist(RobloxId.ToString(), Reason, BlacklistType.Name);
             UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Push(g => g.Blacklists, blacklist);
             await Database.ModifyGuild(Context.Guild.Id, update);
             EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
@@ -92,7 +96,7 @@ namespace RoWifi_Alpha.Commands
             if (Reason.Length == 0)
                 Reason = "N/A";
 
-            RoBlacklist blacklist = new RoBlacklist { Id = Id.ToString(), Reason = Reason, Type = BlacklistType.Group };
+            RoBlacklist blacklist = new RoBlacklist(Id.ToString(), Reason, BlacklistType.Group);
             UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Push(g => g.Blacklists, blacklist);
             await Database.ModifyGuild(Context.Guild.Id, update);
             EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
@@ -133,7 +137,7 @@ namespace RoWifi_Alpha.Commands
                 return RoWifiResult.FromError("Blacklist Addition Failed", "Command has been cancelled");
             string Reason = response.Content;
 
-            RoBlacklist blacklist = new RoBlacklist { Id = Code, Reason = Reason, Type = BlacklistType.Custom };
+            RoBlacklist blacklist = new RoBlacklist(Code, Reason, BlacklistType.Custom);
             UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Push(g => g.Blacklists, blacklist);
             await Database.ModifyGuild(Context.Guild.Id, update);
             EmbedBuilder embed = Miscellanous.GetDefaultEmbed();

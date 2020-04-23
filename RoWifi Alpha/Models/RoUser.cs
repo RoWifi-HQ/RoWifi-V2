@@ -43,6 +43,12 @@ namespace RoWifi_Alpha.Models
                     GroupBindsToAdd.Add(gBind);
             }
 
+            foreach (var Bind in guild.RankBinds.Where(r => r.RbxRankId == 0))
+            {
+                if (!userRoleIds.ContainsKey(Bind.GroupId))
+                    RankBindsToAdd.Add(Bind);
+            }
+
             RoCommandUser CommandUser = new RoCommandUser(this, member, userRoleIds, RobloxName);
             if(guild.CustomBinds != null)
             {

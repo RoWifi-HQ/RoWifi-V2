@@ -37,11 +37,14 @@ namespace RoWifi_Alpha.Commands
                 EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
                 embed.WithTitle("Groupbinds").WithDescription($"Page {Page}");
                 foreach (GroupBind bind in GBS)
-                    embed.AddField($"Group Id: {bind.GroupId}", $"Roles: { string.Concat(bind.DiscordRoles.Select(r => $"<@&{r}> "))}");
+                    embed.AddField($"Group Id: {bind.GroupId}", $"Roles: { string.Concat(bind.DiscordRoles.Select(r => $"<@&{r}> "))}", true);
                 embeds.Add(embed);
                 Page++;
             }
-            await PagedReplyAsync(embeds);
+            if (Page == 2)
+                await ReplyAsync(embed: embeds[0].Build());
+            else
+                await PagedReplyAsync(embeds);
             return RoWifiResult.FromSuccess();
         }
 

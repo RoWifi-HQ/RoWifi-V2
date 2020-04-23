@@ -36,9 +36,9 @@ namespace RoWifi_Alpha.Commands
                 return RoWifiResult.FromError("Bind Viewing Failed", "There were no rankbinds found associated with this server. Perhaps you meant to use `rankbinds new`");
             var UniqueGroups = guild.RankBinds.Select(r => r.GroupId).Distinct();
             List<EmbedBuilder> embeds = new List<EmbedBuilder>();
+            int Page = 1;
             foreach (int Group in UniqueGroups)
             {
-                int Page = 1;
                 var RankBinds = guild.RankBinds.Where(r => r.GroupId == Group).OrderBy(r => r.RbxRankId).Select((x, i) => new { Index = i, Value = x }).GroupBy(x => x.Index / 12).Select(x => x.Select(v => v.Value).ToList());
                 foreach (List<RankBind> RBS in RankBinds)
                 {
@@ -52,7 +52,10 @@ namespace RoWifi_Alpha.Commands
                     Page++;
                 }
             }
-            await PagedReplyAsync(embeds);
+            if (Page == 2)
+                await ReplyAsync(embed: embeds[0].Build());
+            else
+                await PagedReplyAsync(embeds);
             return RoWifiResult.FromSuccess();
         }
 

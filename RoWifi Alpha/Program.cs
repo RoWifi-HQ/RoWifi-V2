@@ -11,6 +11,7 @@ using Coravel;
 using Microsoft.Extensions.Hosting;
 using Discord.Addons.Hosting;
 using Discord.Addons.Hosting.Reliability;
+using Microsoft.Extensions.Logging;
 
 namespace RoWifi_Alpha
 {
@@ -22,16 +23,26 @@ namespace RoWifi_Alpha
         public async Task MainAsync()
         {
             var builder = Host.CreateDefaultBuilder()
+                .ConfigureLogging(x =>
+                {
+                    x.ClearProviders();
+                    x.AddConsole();
+                    x.SetMinimumLevel(LogLevel.Error);
+                })
                 .ConfigureDiscordHost<DiscordSocketClient>((context, config) =>
                 {
                     config.SetToken(Environment.GetEnvironmentVariable("DiscToken"));
                     config.SetDiscordConfiguration(new DiscordSocketConfig
                     {
                         AlwaysDownloadUsers = true,
-                        LogLevel = LogSeverity.Verbose
+                        LogLevel = LogSeverity.Warning
                     });
                 })
-                .UseCommandService()
+                .UseCommandService((context, config) =>
+                {
+                    config.LogLevel = LogSeverity.Warning;
+                    config.CaseSensitiveCommands = false;
+                })
                 .ConfigureServices(services =>
                 {
                     services.AddSingleton<CommandHandler>()
@@ -58,7 +69,7 @@ namespace RoWifi_Alpha
                     .Cron("00 */3 * * *");
                 scheduler.OnWorker("Logging");
                 scheduler.Schedule<LoggerService>()
-                    .EveryFifteenSeconds();
+                    .EveryFiveMinutes();
             })
             .OnError((exception) =>
             {

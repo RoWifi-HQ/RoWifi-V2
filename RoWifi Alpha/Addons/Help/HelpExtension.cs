@@ -8,7 +8,7 @@ namespace RoWifi_Alpha.Addons.Help
 {
     public static class HelpExtension
     {
-        public static Embed GetDefaultEmbed(this CommandService commandService, string command, string prefix)
+        public static Embed GetDefaultEmbed(this CommandService commandService, string command)
         {
             var moduleMatch = commandService.SearchModule(command);
             EmbedBuilder helpEmbed = new EmbedBuilder();
