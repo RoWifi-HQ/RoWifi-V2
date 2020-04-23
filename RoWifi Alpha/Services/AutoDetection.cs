@@ -65,7 +65,7 @@ namespace RoWifi_Alpha.Services
                 watch.Stop();
                 TimeSpan ts = watch.Elapsed;
                 string elapsedTime = string.Format("{0:00}:{1:00}:{2:00}.{3:00}", ts.Hours, ts.Minutes, ts.Seconds, ts.Milliseconds / 10);
-                await Logger.LogDebug($"Auto Detection [{server.Name}] - {elapsedTime}");
+                await Logger.LogPremium($"Auto Detection [{server.Name}] - {elapsedTime}");
                 watch.Reset();
             }
         }

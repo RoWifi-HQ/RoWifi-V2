@@ -16,7 +16,10 @@ namespace RoWifi_Alpha.Services
 {
     public class LoggerService : IInvocable
     {
-        public DiscordWebhookClient Webhook = new DiscordWebhookClient(Environment.GetEnvironmentVariable("LOG_DEBUG"));
+        public DiscordWebhookClient DebugWebhook = new DiscordWebhookClient(Environment.GetEnvironmentVariable("LOG_DEBUG"));
+        public DiscordWebhookClient PremiumWebhook = new DiscordWebhookClient(Environment.GetEnvironmentVariable("LOG_PREMIUM"));
+        public DiscordWebhookClient MainWebhook = new DiscordWebhookClient(Environment.GetEnvironmentVariable("LOG_MAIN"));
+
         private static readonly DateTime s_unixEpoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
         private readonly string projectId = "ro-wifi";
         private readonly MetricServiceClient MetricClient = MetricServiceClient.Create();
@@ -41,7 +44,17 @@ namespace RoWifi_Alpha.Services
 
         public async Task LogDebug(string text)
         {
-            await Webhook.SendMessageAsync(text);
+            await DebugWebhook.SendMessageAsync(text);
+        }
+
+        public async Task LogEvent(string text)
+        {
+            await MainWebhook.SendMessageAsync(text);
+        }
+
+        public async Task LogPremium(string text)
+        {
+            await PremiumWebhook.SendMessageAsync(text);
         }
 
         public async Task LogAction(IGuild guild, SocketUser user, params object[] values)

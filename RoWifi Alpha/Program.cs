@@ -70,6 +70,8 @@ namespace RoWifi_Alpha
                 scheduler.OnWorker("Logging");
                 scheduler.Schedule<LoggerService>()
                     .EveryFiveMinutes();
+                scheduler.Schedule<ActivityService>()
+                    .EveryTenMinutes();
             })
             .OnError((exception) =>
             {
