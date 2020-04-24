@@ -12,6 +12,7 @@ using Microsoft.Extensions.Hosting;
 using Discord.Addons.Hosting;
 using Discord.Addons.Hosting.Reliability;
 using Microsoft.Extensions.Logging;
+using System.Linq;
 
 namespace RoWifi_Alpha
 {
@@ -35,7 +36,9 @@ namespace RoWifi_Alpha
                     config.SetDiscordConfiguration(new DiscordSocketConfig
                     {
                         AlwaysDownloadUsers = true,
-                        LogLevel = LogSeverity.Info
+                        LogLevel = LogSeverity.Info,
+                        ShardId = int.Parse(Environment.GetEnvironmentVariable("SHARD").Split("-").LastOrDefault() ?? "0"),
+                        TotalShards = int.Parse(Environment.GetEnvironmentVariable("TOTAL_SHARDS"))
                     });
                 })
                 .UseCommandService((context, config) =>
