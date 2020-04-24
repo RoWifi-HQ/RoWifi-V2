@@ -13,10 +13,18 @@ namespace RoWifi_Alpha.Services
 {
     public class AutoDetection : IInvocable
     {
-        public DatabaseService Database { get; set; }
-        public DiscordSocketClient Client { get; set; }
-        public RobloxService Roblox { get; set; }
-        public LoggerService Logger { get; set; }
+        private readonly DatabaseService Database;
+        private readonly DiscordSocketClient Client;
+        private readonly RobloxService Roblox;
+        private readonly LoggerService Logger;
+
+        public AutoDetection(IServiceProvider provider, DatabaseService database, RobloxService roblox, DiscordSocketClient client, LoggerService logger)
+        {
+            Database = database;
+            Client = client;
+            Roblox = roblox;
+            Logger = logger;
+        }
 
         public async Task Invoke()
         {
@@ -27,6 +35,7 @@ namespace RoWifi_Alpha.Services
             foreach (RoGuild guild in PremiumGuilds)
             {
                 IGuild server = Client.GetGuild(guild.GuildId);
+                Console.WriteLine("Starting detection on " + server.Name);
                 watch.Start();
 
                 Dictionary<ulong, IGuildUser> AllDiscordUsers = (await server.GetUsersAsync()).ToDictionary(x => x.Id, x => x);

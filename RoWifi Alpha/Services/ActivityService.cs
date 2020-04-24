@@ -1,5 +1,6 @@
 ﻿using Coravel.Invocable;
 using Discord.WebSocket;
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -7,8 +8,13 @@ namespace RoWifi_Alpha.Services
 {
     public class ActivityService : IInvocable
     {
-        public DiscordSocketClient Client { get; set; }
+        private readonly DiscordSocketClient Client;
         private bool ShowMembers = false;
+
+        public ActivityService(IServiceProvider provider, DiscordSocketClient client)
+        {
+            Client = client;
+        }
 
         public async Task Invoke()
         {

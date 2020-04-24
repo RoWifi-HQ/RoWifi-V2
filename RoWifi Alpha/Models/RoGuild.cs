@@ -1,6 +1,8 @@
 ﻿using MongoDB.Bson.Serialization.Attributes;
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace RoWifi_Alpha.Models
 {
@@ -117,6 +119,22 @@ namespace RoWifi_Alpha.Models
             this.Type = Type;
             if (this.Type == BlacklistType.Custom)
                 this.Cmd = new RoCommand(this.Id);
+        }
+
+        public bool Evaluate(RoCommandUser user)
+        {
+            if (Type == BlacklistType.Name)
+            {
+                return user.User.RobloxId.ToString().Equals(Id, StringComparison.OrdinalIgnoreCase);
+            }
+            else if (Type == BlacklistType.Group)
+            {
+                return user.Ranks.ContainsKey(int.Parse(Id));
+            }
+            else
+            {
+                return Cmd.Evaluate(user);
+            }
         }
     }
 }

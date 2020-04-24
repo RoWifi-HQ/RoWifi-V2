@@ -19,7 +19,7 @@ namespace RoWifi_Alpha.Commands
 
         [Command, RequireContext(ContextType.Guild), RequireRoWifiAdmin]
         [Summary("Command to view settings of a server")]
-        public async Task<RuntimeResult> ViewSettingsAsync()
+        public async Task<RuntimeResult> GroupCommand()
         {
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)
@@ -79,6 +79,7 @@ namespace RoWifi_Alpha.Commands
         }
 
         [Command("disable-commands"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
+        [Alias("disable-cmds")]
         [Summary("Command to disable commands in a channel")]
         public async Task<RuntimeResult> DisableCommandsAsync()
         {
@@ -97,6 +98,7 @@ namespace RoWifi_Alpha.Commands
         }
 
         [Command("enable-commands"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
+        [Alias("enable-cmds")]
         [Summary("Command to disable commands in a server")]
         public async Task<RuntimeResult> EnableCommandsAsync()
         {
@@ -104,9 +106,9 @@ namespace RoWifi_Alpha.Commands
             if (guild == null)
                 return RoWifiResult.FromError("Settings Modification Failed", "Server was not setup. Please ask the server owner to set up this server.");
             if (!guild.DisabledChannels.Contains(Context.Channel.Id))
-                return RoWifiResult.FromError("Settings Modification Failed", "Commands have not been disabled in this channel");
+                return RoWifiResult.FromError("Settings Modification Failed", "Commands have not been enabled in this channel");
 
-            UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Push(g => g.DisabledChannels, Context.Channel.Id);
+            UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Pull(g => g.DisabledChannels, Context.Channel.Id);
             await Database.ModifyGuild(Context.Guild.Id, update);
             EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
             embed.WithColor(Color.Green).WithTitle("Settings Modification Successful").WithDescription("Commands have been disabled in this channel successfully");

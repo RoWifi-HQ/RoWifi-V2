@@ -21,13 +21,13 @@ namespace RoWifi_Alpha.Commands
 
         [Command(RunMode = RunMode.Async), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
         [Summary("Command to view groupbinds of a server")]
-        public async Task<RuntimeResult> ViewGroupbindsAsync() 
+        public async Task<RuntimeResult> GroupCommand() 
         {
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)
                 return RoWifiResult.FromError("Bind Viewing Failed", "Server was not setup. Please ask the server owner to set up this server.");
             if (guild.GroupBinds.Count == 0)
-                return RoWifiResult.FromError("Bind Viewing Failed", "There were no groupbinds found associated with this server. Perhaps you meant to use `rankbinds new`");
+                return RoWifiResult.FromError("Bind Viewing Failed", "There were no groupbinds found associated with this server. Perhaps you meant to use `groupbinds new`");
 
             List<EmbedBuilder> embeds = new List<EmbedBuilder>();
             var GroupBindsList = guild.GroupBinds.Select((x, i) => new { Index = i, Value = x }).GroupBy(x => x.Index / 12).Select(x => x.Select(v => v.Value).ToList());

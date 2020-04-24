@@ -38,7 +38,7 @@ namespace RoWifi_Alpha.Models
 
             if (guild.Blacklists != null)
             {
-                bool Success = guild.Blacklists.Any(b => b.Cmd.Evaluate(CommandUser));
+                bool Success = guild.Blacklists.Any(b => b.Evaluate(CommandUser));
                 if (Success)
                 {
                     try 

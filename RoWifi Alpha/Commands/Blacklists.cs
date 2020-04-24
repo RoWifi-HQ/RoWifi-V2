@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 
 namespace RoWifi_Alpha.Commands
 {
-    [Group("blacklists")]
+    [Group("blacklists"), Alias("blacklist", "bl")]
     [Summary("Module to blacklist users from a server")]
     public class Blacklists : InteractiveBase<SocketCommandContext>
     {
@@ -24,7 +24,7 @@ namespace RoWifi_Alpha.Commands
 
         [Command(RunMode = RunMode.Async), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
         [Summary("View users blacklisted from the server")]
-        public async Task<RuntimeResult> ViewBlacklistAsync()
+        public async Task<RuntimeResult> GroupCommand()
         {
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)
@@ -88,7 +88,7 @@ namespace RoWifi_Alpha.Commands
         [Command("group"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
         [Summary("Command to blacklist an entire group")]
         public async Task<RuntimeResult> BlacklistGroupAsync([Summary("The Id of the Roblox group to blacklist")]int Id, 
-            [Remainder, Summary("The reason to blacklist the group for")] string Reason)
+            [Remainder, Summary("The reason to blacklist the group for")] string Reason = "")
         {
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)
@@ -162,7 +162,7 @@ namespace RoWifi_Alpha.Commands
                 return RoWifiResult.FromError("Blacklist Removal Failed", "There was no blacklist found associated with the given Id");
             UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Pull(g => g.Blacklists, blacklist);
             EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
-            embed.WithColor(Color.Green).WithTitle("Blacklist Removeal Successful").WithDescription($"The blacklist with Id {Id} was successfully deleted");
+            embed.WithColor(Color.Green).WithTitle("Blacklist Removal Successful").WithDescription($"The blacklist with Id {Id} was successfully deleted");
             await ReplyAsync(embed: embed.Build());
             await Logger.LogAction(Context.Guild, Context.User, "Blacklist Deletion", $"Id: {blacklist.Id}", $"Reason: {blacklist.Reason}");
             return RoWifiResult.FromSuccess();

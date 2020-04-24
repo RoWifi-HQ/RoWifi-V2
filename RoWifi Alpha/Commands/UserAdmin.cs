@@ -76,12 +76,12 @@ namespace RoWifi_Alpha.Commands
                 return RoWifiResult.FromError("Verification Failed", $"`{Code}` was not found in the profile. Please try again.");
         }
 
-        [Command("reverify"), RequireContext(ContextType.Guild)]
+        [Command("reverify", RunMode = RunMode.Async), RequireContext(ContextType.Guild)]
         [Summary("Command to change linked Roblox Account")]
         public async Task<RuntimeResult> ReverifyAsync([Summary("The Roblox Username to bind to the Discord Account")]string RobloxName = "")
         {
             RoUser user = await Database.GetUserAsync(Context.User.Id);
-            if (user != null)
+            if (user == null)
                 return RoWifiResult.FromError("User Not Verified", "To verify your account, use `verify`");
 
             if (RobloxName.Length == 0)

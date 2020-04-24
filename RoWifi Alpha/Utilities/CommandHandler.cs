@@ -57,7 +57,8 @@ namespace RoWifi_Alpha.Utilities
             if(context.Guild != null)
             {
                 RoGuild guild = await _database.GetGuild(context.Guild.Id);
-                if (guild.DisabledChannels != null && guild.DisabledChannels.Contains(context.Channel.Id))
+                if (guild.DisabledChannels != null && guild.DisabledChannels.Contains(context.Channel.Id) 
+                    && !(message.Content.Contains("enable-commands") || message.Content.Contains("enable-cmds")))
                     return;
             }
 
@@ -68,7 +69,7 @@ namespace RoWifi_Alpha.Utilities
         {
             if (result is RoWifiResult res)
             {
-                if (res.Error != null)
+                if (res.embed != null)
                     await context.Channel.SendMessageAsync(embed: res.embed);
             }
             else if (result.Error.HasValue)
@@ -78,7 +79,8 @@ namespace RoWifi_Alpha.Utilities
                 {
                     case CommandError.BadArgCount:
                     {
-                        var helpEmbed = _commands.GetDefaultEmbed(command.Value.Name);
+                        var help  = context.Message.Content.Replace(GetPrefix(context.Guild.Id), "");
+                        var helpEmbed = _commands.GetDefaultEmbed(help);
                         await context.Channel.SendMessageAsync("Invalid Command Usage. Activating help...", embed: helpEmbed);
                         break;
                     }

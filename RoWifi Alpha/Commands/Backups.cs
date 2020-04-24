@@ -17,7 +17,7 @@ namespace RoWifi_Alpha.Commands
 
         [Command, RequireContext(ContextType.Guild), RequireRoWifiAdmin]
         [Summary("Command to view the saved backups")]
-        public async Task ViewBackupAsync()
+        public async Task GroupCommand()
         {
             await ReplyAsync("Command WIP");
         }

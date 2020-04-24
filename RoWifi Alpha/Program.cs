@@ -27,7 +27,7 @@ namespace RoWifi_Alpha
                 {
                     x.ClearProviders();
                     x.AddConsole();
-                    x.SetMinimumLevel(LogLevel.Error);
+                    x.SetMinimumLevel(LogLevel.Information);
                 })
                 .ConfigureDiscordHost<DiscordSocketClient>((context, config) =>
                 {
@@ -35,12 +35,12 @@ namespace RoWifi_Alpha
                     config.SetDiscordConfiguration(new DiscordSocketConfig
                     {
                         AlwaysDownloadUsers = true,
-                        LogLevel = LogSeverity.Warning
+                        LogLevel = LogSeverity.Info
                     });
                 })
                 .UseCommandService((context, config) =>
                 {
-                    config.LogLevel = LogSeverity.Warning;
+                    config.LogLevel = LogSeverity.Info;
                     config.CaseSensitiveCommands = false;
                 })
                 .ConfigureServices(services =>
@@ -50,7 +50,9 @@ namespace RoWifi_Alpha
                     .AddSingleton<HttpClient>()
                     .AddSingleton<InteractiveService>()
                     .AddSingleton<DatabaseService>()
-                    .AddSingleton<LoggerService>();
+                    .AddSingleton<LoggerService>()
+                    .AddSingleton<ActivityService>()
+                    .AddSingleton<AutoDetection>();
 
                     services.AddHttpClient<RobloxService>();
                     services.AddHttpClient<PatreonService>();

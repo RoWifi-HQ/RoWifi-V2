@@ -24,7 +24,7 @@ namespace RoWifi_Alpha.Commands
 
         [Command(RunMode = RunMode.Async), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
         [Summary("Command to view the custombinds of a server")]
-        public async Task<RuntimeResult> ViewCustombindsAsync()
+        public async Task<RuntimeResult> GroupCommand()
         {
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)
