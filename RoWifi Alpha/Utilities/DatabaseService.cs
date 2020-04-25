@@ -98,8 +98,7 @@ namespace RoWifi_Alpha.Utilities
                     await _guilds.ReplaceOneAsync(g => g.GuildId == guild.GuildId, guild);
                 }
                 var cacheOptions = new MemoryCacheEntryOptions()
-                        .SetSlidingExpiration(TimeSpan.FromMinutes(10))
-                        .SetAbsoluteExpiration(TimeSpan.FromMinutes(60));
+                        .SetAbsoluteExpiration(TimeSpan.FromMinutes(10));
                 _cache.Set(guild.GuildId, guild, cacheOptions);
                 return true;
             }
