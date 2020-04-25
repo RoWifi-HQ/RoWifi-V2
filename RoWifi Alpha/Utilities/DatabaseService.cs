@@ -248,7 +248,7 @@ namespace RoWifi_Alpha.Utilities
                     {
                         var batch = cursor.Current;
                         foreach (BsonDocument b in batch)
-                            Prefixes.Add((ulong)b["_id"].ToInt64(), b.GetValue("Prefix", "?").AsString);
+                            Prefixes.Add((ulong)b["_id"].ToInt64(), b.GetValue("Prefix", "!").AsString);
                     }
                 }
                 return Prefixes;

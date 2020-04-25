@@ -115,7 +115,7 @@ namespace RoWifi_Alpha.Utilities
         public string GetPrefix(ulong GuildId)
         {
             bool Success = Prefixes.TryGetValue(GuildId, out string Prefix);
-            if (!Success) Prefix = "?";
+            if (!Success) Prefix = "!";
             return Prefix;
         }
 
