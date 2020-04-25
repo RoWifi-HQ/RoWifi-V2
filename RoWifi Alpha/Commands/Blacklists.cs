@@ -161,6 +161,7 @@ namespace RoWifi_Alpha.Commands
             if (blacklist == null)
                 return RoWifiResult.FromError("Blacklist Removal Failed", "There was no blacklist found associated with the given Id");
             UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Pull(g => g.Blacklists, blacklist);
+            await Database.ModifyGuild(Context.Guild.Id, update);
             EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
             embed.WithColor(Color.Green).WithTitle("Blacklist Removal Successful").WithDescription($"The blacklist with Id {Id} was successfully deleted");
             await ReplyAsync(embed: embed.Build());

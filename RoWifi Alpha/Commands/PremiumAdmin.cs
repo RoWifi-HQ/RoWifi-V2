@@ -47,8 +47,6 @@ namespace RoWifi_Alpha.Commands
 
             if (Context.Guild.OwnerId != Context.User.Id && Context.User.Id != 311395138133950465)
                 return RoWifiResult.FromError("Redeem Failed", "You must be the server owner to use this command");
-            if (premium.DiscordServers.Contains(Context.Guild.Id))
-                return RoWifiResult.FromError("Redeem Failed", "Premium is already redeemed on this server");
             if (premium.PType == PremiumType.Alpha && premium.DiscordServers.Count > 0)
                 return RoWifiResult.FromError("Redeem Failed", "You may only redeem premium on one server");
 
@@ -59,7 +57,10 @@ namespace RoWifi_Alpha.Commands
             UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Set(g => g.Settings.AutoDetection, true).Set(g => g.Settings.Type, (GuildType)premium.PType);
             await Database.ModifyGuild(Context.Guild.Id, update);
             UpdateDefinition<Premium> update2 = Builders<Premium>.Update.Push(u => u.DiscordServers, Context.Guild.Id);
-            await Database.ModifyPremium(Context.User.Id, update2);
+
+            if (!premium.DiscordServers.Contains(Context.Guild.Id))
+                await Database.ModifyPremium(Context.User.Id, update2);
+
             EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
             embed.WithTitle("Redeem Successful").WithDescription($"Added Premium features to {Context.Guild.Name}");
             await ReplyAsync(embed: embed.Build());
@@ -73,7 +74,7 @@ namespace RoWifi_Alpha.Commands
             Premium premium = await Database.GetPremium(Context.User.Id);
             if (premium == null)
                 return RoWifiResult.FromError("Premium Disable Failed", "You must be a premium member to use this command");
-            if (premium.DiscordServers.Contains(Context.Guild.Id))
+            if (!premium.DiscordServers.Contains(Context.Guild.Id))
                 return RoWifiResult.FromError("Premium Disable Failed", "This server either does not have premium enabled or the premium is owned by an another member");
 
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
