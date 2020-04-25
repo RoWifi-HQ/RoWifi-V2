@@ -72,6 +72,7 @@ namespace RoWifi_Alpha.Models
             Blacklists = new List<RoBlacklist>();
             CustomBinds = new List<CustomBind>();
             DisabledChannels = new List<ulong>();
+            CommandPrefix = "!";
         }
 
         public List<ulong> GetUniqueRoles()

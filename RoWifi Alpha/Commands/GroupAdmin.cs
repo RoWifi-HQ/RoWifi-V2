@@ -47,7 +47,7 @@ namespace RoWifi_Alpha.Commands
 
         [Command("update-all", RunMode = RunMode.Async), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
         [Summary("Command to update all verified users in a server")]
-        public async Task<RoWifiResult> UpdateAllAsync()
+        public async Task<RuntimeResult> UpdateAllAsync()
         {
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)

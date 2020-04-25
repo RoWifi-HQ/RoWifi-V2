@@ -21,9 +21,9 @@ namespace RoWifi_Alpha.Addons.Help
                 {   
                     if (module.Group == null)
                         foreach (var cmd in module.Commands)
-                            cmdList += $"`{cmd.Name}` ";
+                            cmdList += $"`{cmd.Name}`  ";
                     else
-                        cmdList += $"`{module.Name}` ";
+                        cmdList += $"`{module.Name}`  ";
                 }
                 helpEmbed.AddField("Commands", cmdList);
                 return helpEmbed.Build();
@@ -34,19 +34,19 @@ namespace RoWifi_Alpha.Addons.Help
                 string Commands = "";
                 foreach (var Cmd in moduleMatch.Commands)
                     if (Cmd.Name != "GroupCommand")
-                        Commands += $"`{Cmd.Name}` ";
+                        Commands += $"`{Cmd.Name}`  ";
                 if (Commands.Length > 0)
                     helpEmbed.AddField("Commands", Commands);
 
                 string SubModules = "";
                 foreach (var sub in moduleMatch.Submodules)
-                    SubModules += $"`{sub.Name}` ";
+                    SubModules += $"`{sub.Name}`  ";
                 if (SubModules.Length > 0)
                     helpEmbed.AddField("Sub-Modules", SubModules);
 
                 string Aliases = "";
                 foreach (var Alias in moduleMatch.Aliases)
-                    Aliases += $"`{Alias}` ";
+                    Aliases += $"`{Alias}`  ";
                 if (Aliases.Length > 0)
                     helpEmbed.AddField("Aliases", Aliases);
 
