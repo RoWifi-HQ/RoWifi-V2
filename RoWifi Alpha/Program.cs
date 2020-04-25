@@ -28,7 +28,7 @@ namespace RoWifi_Alpha
                 {
                     x.ClearProviders();
                     x.AddConsole();
-                    x.SetMinimumLevel(LogLevel.Information);
+                    x.SetMinimumLevel(LogLevel.Warning);
                 })
                 .ConfigureDiscordHost<DiscordSocketClient>((context, config) =>
                 {

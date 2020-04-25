@@ -85,6 +85,7 @@ namespace RoWifi_Alpha.Utilities
                         break;
                     }
                     case CommandError.Exception:
+                    case CommandError.UnknownCommand:
                         break;
                     default:
                         await context.Channel.SendMessageAsync(result.ErrorReason);
