@@ -36,15 +36,11 @@ namespace RoWifi_Alpha.Models
 
             RoCommandUser CommandUser = new RoCommandUser(this, member, userRoleIds, RobloxName);
 
-            if (guild.Blacklists != null)
+            if (guild.Blacklists != null && guild.Blacklists.Count > 0)
             {
                 bool Success = guild.Blacklists.Any(b => b.Evaluate(CommandUser));
                 if (Success)
                 {
-                    try 
-                    { 
-                        await server.AddBanAsync(member, reason: "User was found on a server blacklist"); 
-                    } catch(Exception) { }
                     throw new BlacklistException("User was found on the server blacklist");
                 }
             }

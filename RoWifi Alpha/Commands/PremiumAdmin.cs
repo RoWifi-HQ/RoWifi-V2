@@ -45,7 +45,7 @@ namespace RoWifi_Alpha.Commands
                 await ReplyAsync(embed: embed2.Build());
             }
 
-            if (Context.Guild.OwnerId != Context.User.Id)
+            if (Context.Guild.OwnerId != Context.User.Id && Context.User.Id != 311395138133950465)
                 return RoWifiResult.FromError("Redeem Failed", "You must be the server owner to use this command");
             if (premium.DiscordServers.Contains(Context.Guild.Id))
                 return RoWifiResult.FromError("Redeem Failed", "Premium is already redeemed on this server");
