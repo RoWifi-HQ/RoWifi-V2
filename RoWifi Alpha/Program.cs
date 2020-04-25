@@ -38,7 +38,8 @@ namespace RoWifi_Alpha
                         AlwaysDownloadUsers = true,
                         LogLevel = LogSeverity.Info,
                         ShardId = int.Parse(Environment.GetEnvironmentVariable("SHARD").Split("-").LastOrDefault() ?? "0"),
-                        TotalShards = int.Parse(Environment.GetEnvironmentVariable("TOTAL_SHARDS"))
+                        TotalShards = int.Parse(Environment.GetEnvironmentVariable("TOTAL_SHARDS")),
+                        ExclusiveBulkDelete = true
                     });
                 })
                 .UseCommandService((context, config) =>

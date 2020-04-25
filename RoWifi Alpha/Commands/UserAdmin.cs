@@ -32,7 +32,7 @@ namespace RoWifi_Alpha.Commands
             if (RobloxName.Length == 0)
             {
                 await ReplyAsync("Enter your Roblox Name.\nSay `cancel` if you wish to cancel this command");
-                SocketMessage response = await NextMessageAsync(new EnsureSourceUserCriterion());
+                SocketMessage response = await NextMessageAsync(new EnsureSourceUserCriterion(), TimeSpan.FromMinutes(5));
                 if (response == null)
                     return RoWifiResult.FromError("Verification Failed", "Command timed out. Please try again");
                 RobloxName = response.Content;
@@ -87,7 +87,7 @@ namespace RoWifi_Alpha.Commands
             if (RobloxName.Length == 0)
             {
                 await ReplyAsync("Enter your Roblox Name.\nSay `cancel` if you wish to cancel this command");
-                SocketMessage response = await NextMessageAsync(new EnsureSourceUserCriterion());
+                SocketMessage response = await NextMessageAsync(new EnsureSourceUserCriterion(), TimeSpan.FromMinutes(5));
                 if (response == null)
                     return RoWifiResult.FromError("Verification Failed", "Command timed out. Please try again");
                 RobloxName = response.Content;
@@ -133,7 +133,7 @@ namespace RoWifi_Alpha.Commands
                 return RoWifiResult.FromError("Verification Failed", $"`{Code}` was not found in the profile. Please try again.");
         }
 
-        [Command("update"), RequireContext(ContextType.Guild)]
+        [Command("update"), RequireContext(ContextType.Guild), Alias("getroles")]
         [RequireBotPermission(GuildPermission.ManageRoles | GuildPermission.ManageNicknames, 
             ErrorMessage = "I cannot update users as I need the following permissions: Manage Roles, Manage Nicknames.")]
         [Summary("Command to update a user's roles")]

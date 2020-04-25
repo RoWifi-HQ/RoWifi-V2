@@ -28,13 +28,13 @@ namespace RoWifi_Alpha.Commands
 
             await ReplyAsync("Which role would you like to bind as your verification role?\nPlease tag the role for the bot to be able to detect it");
             SocketMessage response = await NextMessageAsync(new EnsureSourceUserCriterion());
-            if (response == null || response.MentionedRoles.Count > 0)
+            if (response == null || response.MentionedRoles.Count == 0)
                 return RoWifiResult.FromError("Setup Failed", "Failed to detect a response or there was no mentioned role in the response");
             guild.VerificationRole = response.MentionedRoles.First().Id;
 
             await ReplyAsync("Which role would you like to bind as your verified role?\nPlease tag the role for the bot to be able to detect it");
             response = await NextMessageAsync(new EnsureSourceUserCriterion());
-            if (response == null || response.MentionedRoles.Count > 0)
+            if (response == null || response.MentionedRoles.Count == 0)
                 return RoWifiResult.FromError("Setup Failed", "Failed to detect a response or there was no mentioned role in the response");
             guild.VerifiedRole = response.MentionedRoles.First().Id;
 
