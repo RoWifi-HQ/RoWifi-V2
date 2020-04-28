@@ -56,7 +56,8 @@ namespace RoWifi_Alpha
                     .AddSingleton<DatabaseService>()
                     .AddSingleton<LoggerService>()
                     .AddSingleton<ActivityService>()
-                    .AddSingleton<AutoDetection>();
+                    .AddSingleton<AutoDetection>()
+                    .AddSingleton<Services.EventHandler>();
 
                     services.AddHttpClient<RobloxService>();
                     services.AddHttpClient<PatreonService>();

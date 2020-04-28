@@ -25,7 +25,7 @@ namespace RoWifi_Alpha.Models
                 await member.RemoveRoleAsync(VerificationRole, new RequestOptions { AuditLogReason = reason });
 
             IRole VerifiedRole = server.Roles.Where(r => r != null).Where(r => r.Id == guild.VerifiedRole).FirstOrDefault();
-            if (VerifiedRole != null && member.RoleIds.Contains(VerifiedRole.Id))
+            if (VerifiedRole != null && !member.RoleIds.Contains(VerifiedRole.Id))
                 await member.AddRoleAsync(VerifiedRole, new RequestOptions { AuditLogReason = reason });
 
             Dictionary<int, int> userRoleIds = await Roblox.GetUserRoles(RobloxId);
@@ -123,7 +123,9 @@ namespace RoWifi_Alpha.Models
                         RemovedRoles.Add(Role);
                 }
             }
-            await member.AddRolesAsync(AddedRoles, new RequestOptions { AuditLogReason = reason });
+            if(AddedRoles.Count > 0)
+                await member.AddRolesAsync(AddedRoles, new RequestOptions { AuditLogReason = reason });
+            if (RemovedRoles.Count > 0)
             await member.RemoveRolesAsync(RemovedRoles, new RequestOptions { AuditLogReason = reason });
 
             return (AddedRoles.Select(r => r.Id).ToList(), RemovedRoles.Select(r => r.Id).ToList());

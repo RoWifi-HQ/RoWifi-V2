@@ -26,7 +26,7 @@ namespace RoWifi_Alpha.Commands
         public async Task SupportAsync()
         {
             string DiscLink = "https://www.discord.gg/h4BGGyR";
-            string InviteLink = "https://discordapp.com/oauth2/authorize?client_id=508968886998269962&scope=bot&permissions=2080898303";
+            string InviteLink = "https://discordapp.com/oauth2/authorize?client_id=508968886998269962&scope=bot&permissions=402672704";
             EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
             embed.AddField("Support Server", $"To know more about announcements, updates and other stuff: [Click Here]({DiscLink})")
                 .AddField("Invite Link", $"To invite the bot into your server: [Click Here]({InviteLink})");

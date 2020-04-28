@@ -83,7 +83,7 @@ namespace RoWifi_Alpha.Commands
 
             UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Set(g => g.Settings.AutoDetection, false)
                                                     .Set(g => g.Settings.Type, GuildType.Normal)
-                                                    .Set(g => g.CustomBinds, null);
+                                                    .Set(g => g.CustomBinds, new List<CustomBind>());
             await Database.ModifyGuild(Context.Guild.Id, update);
             UpdateDefinition<Premium> update2 = Builders<Premium>.Update.Pull(u => u.DiscordServers, Context.Guild.Id);
             await Database.ModifyPremium(Context.User.Id, update2);

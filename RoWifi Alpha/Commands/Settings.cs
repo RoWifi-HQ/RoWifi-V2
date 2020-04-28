@@ -86,7 +86,7 @@ namespace RoWifi_Alpha.Commands
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)
                 return RoWifiResult.FromError("Settings Modification Failed", "Server was not setup. Please ask the server owner to set up this server.");
-            if (guild.DisabledChannels.Contains(Context.Channel.Id))
+            if (guild.DisabledChannels != null && guild.DisabledChannels.Contains(Context.Channel.Id))
                 return RoWifiResult.FromError("Settings Modification Failed", "Commands have already been disabled in this channel");
 
             UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Push(g => g.DisabledChannels, Context.Channel.Id);
@@ -105,7 +105,7 @@ namespace RoWifi_Alpha.Commands
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)
                 return RoWifiResult.FromError("Settings Modification Failed", "Server was not setup. Please ask the server owner to set up this server.");
-            if (!guild.DisabledChannels.Contains(Context.Channel.Id))
+            if (guild.DisabledChannels == null || !guild.DisabledChannels.Contains(Context.Channel.Id))
                 return RoWifiResult.FromError("Settings Modification Failed", "Commands have not been enabled in this channel");
 
             UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Pull(g => g.DisabledChannels, Context.Channel.Id);
