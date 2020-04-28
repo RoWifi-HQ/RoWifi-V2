@@ -54,6 +54,16 @@ namespace RoWifi_Alpha.Utilities
                     || message.HasMentionPrefix(_client.CurrentUser, ref argPos)) || message.Author.IsBot)
                 return;
 
+            /*if (context.Guild != null && message.Content != null && message.Content.Length > 0)
+            {
+                RoGuild guild = await _database.GetGuild(context.Guild.Id);
+                if (guild.DisabledChannels != null && guild.DisabledChannels.Contains(context.Channel.Id))
+                {
+                    if (!(message.Content.Contains("enable-commands") || message.Content.Contains("enable-cmds")))
+                        return;
+                }
+            }*/
+
             await _commands.ExecuteAsync(context, argPos, _services);
         }
 
