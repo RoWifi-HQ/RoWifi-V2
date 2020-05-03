@@ -38,11 +38,11 @@ namespace RoWifi_Alpha.Models
 
             if (guild.Blacklists != null && guild.Blacklists.Count > 0)
             {
-                bool Success = guild.Blacklists.Any(b => b.Evaluate(CommandUser));
-                if (Success)
+                RoBlacklist Success = guild.Blacklists.Where(b => b.Evaluate(CommandUser)).FirstOrDefault();
+                if (Success != null)
                 {
                     try { await server.AddBanAsync(member, reason: "User was found on the server blacklist"); } catch(Exception) { }
-                    throw new BlacklistException("User was found on the server blacklist");
+                    throw new BlacklistException(Success.Reason);
                 }
             }
 
