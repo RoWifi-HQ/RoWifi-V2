@@ -189,6 +189,11 @@ namespace RoWifi_Alpha.Commands
             }
             catch(BlacklistException)
             {
+                try
+                {
+                    IDMChannel Channel = await Context.User.GetOrCreateDMChannelAsync();
+                    await Channel.SendMessageAsync($"You were found on the server blacklist in {Context.Guild.Name}");
+                } catch (Exception) { }
                 return RoWifiResult.FromError("Update Failed", "User was found on the server blacklist");
             }
         }
