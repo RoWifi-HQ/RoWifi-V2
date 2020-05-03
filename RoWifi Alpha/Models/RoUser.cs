@@ -41,6 +41,7 @@ namespace RoWifi_Alpha.Models
                 bool Success = guild.Blacklists.Any(b => b.Evaluate(CommandUser));
                 if (Success)
                 {
+                    try { await server.AddBanAsync(member, reason: "User was found on the server blacklist"); } catch(Exception) { }
                     throw new BlacklistException("User was found on the server blacklist");
                 }
             }

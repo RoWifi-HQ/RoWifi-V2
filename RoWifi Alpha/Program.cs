@@ -76,7 +76,7 @@ namespace RoWifi_Alpha
                     .Cron("00 */3 * * *");
                 scheduler.OnWorker("Logging");
                 scheduler.Schedule<LoggerService>()
-                    .EveryFiveMinutes();
+                    .Hourly();
                 scheduler.Schedule<ActivityService>()
                     .EveryTenMinutes();
             })
