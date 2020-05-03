@@ -57,7 +57,7 @@ namespace RoWifi_Alpha.Utilities
             if (context.Guild != null && message.Content != null && message.Content.Length > 0)
             {
                 RoGuild guild = await _database.GetGuild(context.Guild.Id);
-                if (guild.DisabledChannels != null && guild.DisabledChannels.Contains(context.Channel.Id))
+                if (guild != null && guild.DisabledChannels != null && guild.DisabledChannels.Contains(context.Channel.Id))
                 {
                     if (!(message.Content.Contains("enable-commands") || message.Content.Contains("enable-cmds")))
                         return;
