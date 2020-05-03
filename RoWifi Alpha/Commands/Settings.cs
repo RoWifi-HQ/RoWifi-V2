@@ -5,6 +5,7 @@ using RoWifi_Alpha.Models;
 using RoWifi_Alpha.Preconditions;
 using RoWifi_Alpha.Services;
 using RoWifi_Alpha.Utilities;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace RoWifi_Alpha.Commands
@@ -89,7 +90,11 @@ namespace RoWifi_Alpha.Commands
             if (guild.DisabledChannels != null && guild.DisabledChannels.Contains(Context.Channel.Id))
                 return RoWifiResult.FromError("Settings Modification Failed", "Commands have already been disabled in this channel");
 
-            UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Push(g => g.DisabledChannels, Context.Channel.Id);
+            UpdateDefinition<RoGuild> update;
+            if (guild.DisabledChannels == null)
+                update = Builders<RoGuild>.Update.Set(g => g.DisabledChannels, new List<ulong>() { Context.Channel.Id });
+            else
+                update = Builders<RoGuild>.Update.Push(g => g.DisabledChannels, Context.Channel.Id);
             await Database.ModifyGuild(Context.Guild.Id, update);
             EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
             embed.WithColor(Color.Green).WithTitle("Settings Modification Successful").WithDescription("Commands have been disabled in this channel successfully");
@@ -111,7 +116,7 @@ namespace RoWifi_Alpha.Commands
             UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Pull(g => g.DisabledChannels, Context.Channel.Id);
             await Database.ModifyGuild(Context.Guild.Id, update);
             EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
-            embed.WithColor(Color.Green).WithTitle("Settings Modification Successful").WithDescription("Commands have been disabled in this channel successfully");
+            embed.WithColor(Color.Green).WithTitle("Settings Modification Successful").WithDescription("Commands have been enabled in this channel successfully");
             await ReplyAsync(embed: embed.Build());
             return RoWifiResult.FromSuccess();
         }
