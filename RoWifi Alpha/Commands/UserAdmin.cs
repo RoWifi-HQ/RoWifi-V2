@@ -187,12 +187,12 @@ namespace RoWifi_Alpha.Commands
             {
                 return RoWifiResult.FromRobloxError("Update Failed");
             }
-            catch(BlacklistException)
+            catch(BlacklistException bl)
             {
                 try
                 {
                     IDMChannel Channel = await Context.User.GetOrCreateDMChannelAsync();
-                    await Channel.SendMessageAsync($"You were found on the server blacklist in {Context.Guild.Name}");
+                    await Channel.SendMessageAsync($"You were found on the server blacklist in {Context.Guild.Name}. Reason: {bl.Message}");
                 } catch (Exception) { }
                 return RoWifiResult.FromError("Update Failed", "User was found on the server blacklist");
             }
