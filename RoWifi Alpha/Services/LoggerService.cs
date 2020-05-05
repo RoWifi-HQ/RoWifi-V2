@@ -35,11 +35,15 @@ namespace RoWifi_Alpha.Services
 
         public async Task LogServer(IGuild guild, Embed embed)
         {
-            ITextChannel channel = (await guild.GetTextChannelsAsync()).Where(r => r.Name == "rowifi-logs").FirstOrDefault();
-            if(channel != null)
+            try
             {
-                await channel.SendMessageAsync(embed: embed);
+                ITextChannel channel = (await guild.GetTextChannelsAsync()).Where(r => r.Name == "rowifi-logs").FirstOrDefault();
+                if (channel != null)
+                {
+                    await channel.SendMessageAsync(embed: embed);
+                }
             }
+            catch(Exception) { }
         }
 
         public async Task LogDebug(string text)
