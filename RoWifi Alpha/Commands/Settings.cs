@@ -81,8 +81,8 @@ namespace RoWifi_Alpha.Commands
         }
 
         [Command("commands"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-        [Summary("Command to toggle enabling/disabling commands in a channel")]
-        public async Task<RuntimeResult> CommandsToggleAsync(string option)
+        [Summary("Command to toggle enabling/disabling commands in a channel. Options: `on` `off`")]
+        public async Task<RuntimeResult> CommandsToggleAsync([Summary("The keyword to disable/enable commands")]string option)
         {
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)
@@ -112,6 +112,39 @@ namespace RoWifi_Alpha.Commands
             }
             else
                 embed.WithColor(Color.Red).WithTitle("Settings Modification Failed").WithDescription("Invalid Option selected");
+            await ReplyAsync(embed: embed.Build());
+            return RoWifiResult.FromSuccess();
+        }
+
+        [Command("blacklist-action"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
+        [Alias("bl-action")]
+        [Summary("Command to set the blacklist action. Options: `None` `Kick` `Ban`")]
+        public async Task<RuntimeResult> SetBlacklistActionAsync(string option)
+        {
+            RoGuild guild = await Database.GetGuild(Context.Guild.Id);
+            if (guild == null)
+                return RoWifiResult.FromError("Settings Modification Failed", "Server was not setup. Please ask the server owner to set up this server.");
+            EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
+            UpdateDefinition<RoGuild> update = null;
+            if (option.Equals("none", StringComparison.OrdinalIgnoreCase))
+            {
+                update = Builders<RoGuild>.Update.Set(g => g.Settings.BlacklistAction, BlacklistActionType.None);
+                embed.WithColor(Color.Green).WithTitle("Settings Modification Successful").WithDescription("Blacklist Action was set to `None`");
+            }
+            else if (option.Equals("kick", StringComparison.OrdinalIgnoreCase))
+            {
+                update = Builders<RoGuild>.Update.Set(g => g.Settings.BlacklistAction, BlacklistActionType.Kick);
+                embed.WithColor(Color.Green).WithTitle("Settings Modification Successful").WithDescription("Blacklist Action was set to `Kick`");
+            }
+            else if (option.Equals("ban", StringComparison.OrdinalIgnoreCase))
+            {
+                update = Builders<RoGuild>.Update.Set(g => g.Settings.BlacklistAction, BlacklistActionType.Ban);
+                embed.WithColor(Color.Green).WithTitle("Settings Modification Successful").WithDescription("Blacklist Action was set to `Ban`");
+            }
+            else
+                embed.WithColor(Color.Red).WithTitle("Settings Modification Failed").WithDescription("Invalid Option selected");
+            if (update != null)
+                await Database.ModifyGuild(Context.Guild.Id, update);
             await ReplyAsync(embed: embed.Build());
             return RoWifiResult.FromSuccess();
         }
