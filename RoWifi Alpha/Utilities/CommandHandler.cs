@@ -59,7 +59,7 @@ namespace RoWifi_Alpha.Utilities
                 RoGuild guild = await _database.GetGuild(context.Guild.Id);
                 if (guild != null && guild.DisabledChannels != null && guild.DisabledChannels.Contains(context.Channel.Id))
                 {
-                    if (!(message.Content.Contains("enable-commands") || message.Content.Contains("enable-cmds")))
+                    if (!message.Content.Contains("commands on"))
                         return;
                 }
             }
