@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace RoWifi_Alpha.Models
 {
@@ -97,6 +96,12 @@ namespace RoWifi_Alpha.Models
     {
         public bool AutoDetection { get; set; }
         public GuildType Type { get; set; }
+        public BlacklistActionType BlacklistAction { get; set; }
+    }
+
+    public enum BlacklistActionType
+    {
+        None, Kick, Ban
     }
 
     public enum BlacklistType

@@ -5,6 +5,7 @@ using RoWifi_Alpha.Models;
 using RoWifi_Alpha.Preconditions;
 using RoWifi_Alpha.Services;
 using RoWifi_Alpha.Utilities;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -33,7 +34,7 @@ namespace RoWifi_Alpha.Commands
             embed.AddField("Guild Id", $"{Context.Guild.Id}", true)
                 .AddField("Member Count", $"{Context.Guild.MemberCount}", true)
                 .AddField("Shard Id", $"{Context.Client.ShardId}", true)
-                .AddField("Settings", $"Tier: {Tier}\nAutoDetection: {guild.Settings.AutoDetection}", true)
+                .AddField("Settings", $"Tier: {Tier}\nAutoDetection: {guild.Settings.AutoDetection}\nBlacklist Action: {guild.Settings.BlacklistAction}", true)
                 .AddField("Prefix", $"{guild.CommandPrefix ?? "!"}", true)
                 .AddField("Verification Role", $"<@&{guild.VerificationRole}>", true)
                 .AddField("Verified Role", $"<@&{guild.VerifiedRole}>", true)
@@ -79,44 +80,71 @@ namespace RoWifi_Alpha.Commands
             return RoWifiResult.FromSuccess();
         }
 
-        [Command("disable-commands"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-        [Alias("disable-cmds")]
-        [Summary("Command to disable commands in a channel")]
-        public async Task<RuntimeResult> DisableCommandsAsync()
+        [Command("commands"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
+        [Summary("Command to toggle enabling/disabling commands in a channel. Options: `on` `off`")]
+        public async Task<RuntimeResult> CommandsToggleAsync([Summary("The keyword to disable/enable commands")]string option)
         {
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)
                 return RoWifiResult.FromError("Settings Modification Failed", "Server was not setup. Please ask the server owner to set up this server.");
-            if (guild.DisabledChannels != null && guild.DisabledChannels.Contains(Context.Channel.Id))
-                return RoWifiResult.FromError("Settings Modification Failed", "Commands have already been disabled in this channel");
-
-            UpdateDefinition<RoGuild> update;
-            if (guild.DisabledChannels == null)
-                update = Builders<RoGuild>.Update.Set(g => g.DisabledChannels, new List<ulong>() { Context.Channel.Id });
-            else
-                update = Builders<RoGuild>.Update.Push(g => g.DisabledChannels, Context.Channel.Id);
-            await Database.ModifyGuild(Context.Guild.Id, update);
             EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
-            embed.WithColor(Color.Green).WithTitle("Settings Modification Successful").WithDescription("Commands have been disabled in this channel successfully");
+            if (option.Equals("off", StringComparison.OrdinalIgnoreCase))
+            {
+                if (guild.DisabledChannels != null && guild.DisabledChannels.Contains(Context.Channel.Id))
+                    return RoWifiResult.FromError("Settings Modification Failed", "Commands have already been disabled in this channel");
+
+                UpdateDefinition<RoGuild> update;
+                if (guild.DisabledChannels == null)
+                    update = Builders<RoGuild>.Update.Set(g => g.DisabledChannels, new List<ulong>() { Context.Channel.Id });
+                else
+                    update = Builders<RoGuild>.Update.Push(g => g.DisabledChannels, Context.Channel.Id);
+                await Database.ModifyGuild(Context.Guild.Id, update);
+                embed.WithColor(Color.Green).WithTitle("Settings Modification Successful").WithDescription("Commands have been disabled in this channel successfully");
+            }
+            else if (option.Equals("on", StringComparison.OrdinalIgnoreCase))
+            {
+                if (guild.DisabledChannels == null || !guild.DisabledChannels.Contains(Context.Channel.Id))
+                    return RoWifiResult.FromError("Settings Modification Failed", "Commands have not been enabled in this channel");
+
+                UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Pull(g => g.DisabledChannels, Context.Channel.Id);
+                await Database.ModifyGuild(Context.Guild.Id, update);
+                embed.WithColor(Color.Green).WithTitle("Settings Modification Successful").WithDescription("Commands have been enabled in this channel successfully");
+            }
+            else
+                embed.WithColor(Color.Red).WithTitle("Settings Modification Failed").WithDescription("Invalid Option selected");
             await ReplyAsync(embed: embed.Build());
             return RoWifiResult.FromSuccess();
         }
 
-        [Command("enable-commands"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-        [Alias("enable-cmds")]
-        [Summary("Command to disable commands in a server")]
-        public async Task<RuntimeResult> EnableCommandsAsync()
+        [Command("blacklist-action"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
+        [Alias("bl-action")]
+        [Summary("Command to set the blacklist action. Options: `None` `Kick` `Ban`")]
+        public async Task<RuntimeResult> SetBlacklistActionAsync(string option)
         {
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)
                 return RoWifiResult.FromError("Settings Modification Failed", "Server was not setup. Please ask the server owner to set up this server.");
-            if (guild.DisabledChannels == null || !guild.DisabledChannels.Contains(Context.Channel.Id))
-                return RoWifiResult.FromError("Settings Modification Failed", "Commands have not been enabled in this channel");
-
-            UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Pull(g => g.DisabledChannels, Context.Channel.Id);
-            await Database.ModifyGuild(Context.Guild.Id, update);
             EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
-            embed.WithColor(Color.Green).WithTitle("Settings Modification Successful").WithDescription("Commands have been enabled in this channel successfully");
+            UpdateDefinition<RoGuild> update = null;
+            if (option.Equals("none", StringComparison.OrdinalIgnoreCase))
+            {
+                update = Builders<RoGuild>.Update.Set(g => g.Settings.BlacklistAction, BlacklistActionType.None);
+                embed.WithColor(Color.Green).WithTitle("Settings Modification Successful").WithDescription("Blacklist Action was set to `None`");
+            }
+            else if (option.Equals("kick", StringComparison.OrdinalIgnoreCase))
+            {
+                update = Builders<RoGuild>.Update.Set(g => g.Settings.BlacklistAction, BlacklistActionType.Kick);
+                embed.WithColor(Color.Green).WithTitle("Settings Modification Successful").WithDescription("Blacklist Action was set to `Kick`");
+            }
+            else if (option.Equals("ban", StringComparison.OrdinalIgnoreCase))
+            {
+                update = Builders<RoGuild>.Update.Set(g => g.Settings.BlacklistAction, BlacklistActionType.Ban);
+                embed.WithColor(Color.Green).WithTitle("Settings Modification Successful").WithDescription("Blacklist Action was set to `Ban`");
+            }
+            else
+                embed.WithColor(Color.Red).WithTitle("Settings Modification Failed").WithDescription("Invalid Option selected");
+            if (update != null)
+                await Database.ModifyGuild(Context.Guild.Id, update);
             await ReplyAsync(embed: embed.Build());
             return RoWifiResult.FromSuccess();
         }

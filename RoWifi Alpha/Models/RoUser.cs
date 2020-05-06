@@ -41,7 +41,20 @@ namespace RoWifi_Alpha.Models
                 RoBlacklist Success = guild.Blacklists.Where(b => b.Evaluate(CommandUser)).FirstOrDefault();
                 if (Success != null)
                 {
-                    try { await server.AddBanAsync(member, reason: "User was found on the server blacklist"); } catch(Exception) { }
+                    try
+                    {
+                        IDMChannel Channel = await member.GetOrCreateDMChannelAsync();
+                        await Channel.SendMessageAsync($"You were found on the server blacklist in {server.Name}. Reason: {Success.Reason}");
+                    }
+                    catch (Exception) { }
+                    try 
+                    {
+                        if (guild.Settings.BlacklistAction == BlacklistActionType.Ban)
+                            await server.AddBanAsync(member, reason: "User was found on the server blacklist");
+                        else if (guild.Settings.BlacklistAction == BlacklistActionType.Kick)
+                            await member.KickAsync("User was found on the server blacklist");
+                    } 
+                    catch(Exception) { }
                     throw new BlacklistException(Success.Reason);
                 }
             }
