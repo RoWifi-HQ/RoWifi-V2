@@ -1,15 +1,17 @@
 ﻿using Discord;
+using Discord.Addons.Hosting;
 using Discord.WebSocket;
 using RoWifi_Alpha.Exceptions;
 using RoWifi_Alpha.Models;
 using RoWifi_Alpha.Utilities;
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace RoWifi_Alpha.Services
 {
-    public class EventHandler
+    public class EventHandler : InitializedService
     {
         private DiscordSocketClient Client;
         private readonly LoggerService Logger;
@@ -22,17 +24,22 @@ namespace RoWifi_Alpha.Services
             Logger = logger;
             Database = database;
             Roblox = roblox;
+        }
+
+        public override Task InitializeAsync(CancellationToken cancellationToken)
+        {
             Client.JoinedGuild += OnGuildJoin;
             Client.LeftGuild += OnGuildLeave;
             Client.UserJoined += OnMemberJoin;
+            return Task.CompletedTask;
         }
 
         private async Task OnMemberJoin(SocketGuildUser arg)
         {
-            RoGuild guild = await Database.GetGuild(arg.Guild.Id);
-            if (guild == null) return;
             RoUser user = await Database.GetUserAsync(arg.Id);
             if (user == null) return;
+            RoGuild guild = await Database.GetGuild(arg.Guild.Id);
+            if (guild == null) return;
             EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
             try
             {

@@ -98,6 +98,7 @@ namespace RoWifi_Alpha.Models
         public GuildType Type { get; set; }
         public BlacklistActionType BlacklistAction { get; set; }
         public bool UpdateOnJoin { get; set; }
+        public bool UpdateOnVerify { get; set; }
     }
 
     public enum BlacklistActionType

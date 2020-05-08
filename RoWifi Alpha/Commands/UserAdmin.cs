@@ -70,8 +70,15 @@ namespace RoWifi_Alpha.Commands
             if(Present)
             {
                 RoUser newUser = new RoUser { DiscordId = Context.User.Id, RobloxId = RobloxId.Value };
+                RoGuild guild = await Database.GetGuild(Context.Guild.Id);
                 await Database.AddUser(newUser);
-                return RoWifiResult.FromSuccess("Verification Successful", "To get your roles, run `update`. To change your linked Roblox Account, use `reverify`");
+                embed = Miscellanous.GetDefaultEmbed();
+                embed.WithColor(Color.Green).WithTitle("Verification Successful").WithDescription("To get your roles, run `update`. To change your linked Roblox Account, use `reverify`");
+                await ReplyAsync(embed: embed.Build());
+
+                if (guild.Settings.UpdateOnVerify)
+                    return await UpdateAsync();
+                return RoWifiResult.FromSuccess();
             }
             else
                 return RoWifiResult.FromError("Verification Failed", $"`{Code}` was not found in the profile. Please try again.");
@@ -128,8 +135,15 @@ namespace RoWifi_Alpha.Commands
             if (Present)
             {
                 RoUser newUser = new RoUser { DiscordId = Context.User.Id, RobloxId = RobloxId.Value };
+                RoGuild guild = await Database.GetGuild(Context.Guild.Id);
                 await Database.AddUser(newUser, false);
-                return RoWifiResult.FromSuccess("Verification Successful", "To get your roles, run `update`. To change your linked Roblox Account, use `reverify`");
+                embed = Miscellanous.GetDefaultEmbed();
+                embed.WithColor(Color.Green).WithTitle("Verification Successful").WithDescription("To get your roles, run `update`. To change your linked Roblox Account, use `reverify`");
+                await ReplyAsync(embed: embed.Build());
+
+                if (guild.Settings.UpdateOnVerify)
+                    return await UpdateAsync();
+                return RoWifiResult.FromSuccess();
             }
             else
                 return RoWifiResult.FromError("Verification Failed", $"`{Code}` was not found in the profile. Please try again.");
