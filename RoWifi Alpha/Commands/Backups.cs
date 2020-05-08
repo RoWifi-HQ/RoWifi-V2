@@ -10,6 +10,7 @@ using PremiumType = RoWifi_Alpha.Models.PremiumType;
 namespace RoWifi_Alpha.Commands
 {
     [Group("backup")]
+    [RequireBotPermission(ChannelPermission.EmbedLinks, ErrorMessage = "Looks like I'm missing the Embed Links Permission")]
     [Summary("Module to save and restore server binds in the database")]
     public class Backups : InteractiveBase<SocketCommandContext>
     {

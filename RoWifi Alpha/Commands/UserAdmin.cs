@@ -21,6 +21,7 @@ namespace RoWifi_Alpha.Commands
         public LoggerService Logger { get; set; }
 
         [Command("verify", RunMode = RunMode.Async), RequireContext(ContextType.Guild)]
+        [RequireBotPermission(ChannelPermission.EmbedLinks, ErrorMessage = "Looks like I'm missing the Embed Links Permission")]
         [Summary("Command to link Roblox Account to Discord Account")]
         public async Task<RuntimeResult> VerifyAsync([Summary("The Roblox Username to bind to the Discord Account")]string RobloxName = "")
         {
@@ -77,6 +78,7 @@ namespace RoWifi_Alpha.Commands
         }
 
         [Command("reverify", RunMode = RunMode.Async), RequireContext(ContextType.Guild)]
+        [RequireBotPermission(ChannelPermission.EmbedLinks, ErrorMessage = "Looks like I'm missing the Embed Links Permission")]
         [Summary("Command to change linked Roblox Account")]
         public async Task<RuntimeResult> ReverifyAsync([Summary("The Roblox Username to bind to the Discord Account")]string RobloxName = "")
         {
@@ -135,7 +137,8 @@ namespace RoWifi_Alpha.Commands
 
         [Command("update"), RequireContext(ContextType.Guild), Alias("getroles")]
         [RequireBotPermission(GuildPermission.ManageRoles | GuildPermission.ManageNicknames, 
-            ErrorMessage = "I cannot update users as I need the following permissions: Manage Roles, Manage Nicknames.")]
+            ErrorMessage = "Looks like I am missing one or more of the following permissions: Manage Roles, Manage Nicknames")]
+        [RequireBotPermission(ChannelPermission.EmbedLinks, ErrorMessage = "Looks like I'm missing the Embed Links Permission")]
         [Summary("Command to update a user's roles")]
         public async Task<RuntimeResult> UpdateAsync([Summary("The User to be updated")]IGuildUser member = null)
         {
@@ -194,6 +197,7 @@ namespace RoWifi_Alpha.Commands
         }
 
         [Command("userinfo"), RequireContext(ContextType.Guild)]
+        [RequireBotPermission(ChannelPermission.EmbedLinks, ErrorMessage = "Looks like I'm missing the Embed Links Permission")]
         public async Task<RuntimeResult> UserInfoAsync([Summary("The User whose info is to be viewed")]IGuildUser member = null)
         {
             if (member == null)

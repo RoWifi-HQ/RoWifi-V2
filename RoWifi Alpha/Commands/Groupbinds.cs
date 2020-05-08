@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 namespace RoWifi_Alpha.Commands
 {
     [Group("groupbinds"), Alias("gb")]
+    [RequireBotPermission(ChannelPermission.EmbedLinks, ErrorMessage = "Looks like I'm missing the Embed Links Permission")]
     [Summary("Module to access groupbinds of a server")]
     public class Groupbinds : InteractiveBase<SocketCommandContext>
     {

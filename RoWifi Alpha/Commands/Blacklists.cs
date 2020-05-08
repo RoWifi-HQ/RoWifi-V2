@@ -15,6 +15,7 @@ using System.Threading.Tasks;
 namespace RoWifi_Alpha.Commands
 {
     [Group("blacklists"), Alias("blacklist", "bl")]
+    [RequireBotPermission(ChannelPermission.EmbedLinks, ErrorMessage = "Looks like I'm missing the Embed Links Permission")]
     [Summary("Module to blacklist users from a server")]
     public class Blacklists : InteractiveBase<SocketCommandContext>
     {

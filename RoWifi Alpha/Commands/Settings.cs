@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 namespace RoWifi_Alpha.Commands
 {
     [Group("settings")]
+    [RequireBotPermission(ChannelPermission.EmbedLinks, ErrorMessage = "Looks like I'm missing the Embed Links Permission")]
     [Summary("Command to access settings of a server")]
     public class Settings : ModuleBase<SocketCommandContext>
     {

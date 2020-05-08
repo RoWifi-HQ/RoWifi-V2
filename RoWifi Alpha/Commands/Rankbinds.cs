@@ -18,6 +18,7 @@ namespace RoWifi_Alpha.Commands
 {
     [Group("rankbinds")]
     [Alias("rb")]
+    [RequireBotPermission(ChannelPermission.EmbedLinks, ErrorMessage = "Looks like I'm missing the Embed Links Permission")]
     [Summary("Module to access rankbinds of a server")]
     public class Rankbinds : InteractiveBase<SocketCommandContext>
     {
