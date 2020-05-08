@@ -118,7 +118,7 @@ namespace RoWifi_Alpha.Commands
         }
 
         [Command("delete"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-        [Summary("Command to delete an existing custombind")]
+        [Summary("Command to delete an existing custombind"), Alias("remove")]
         public async Task<RuntimeResult> DeleteCustombindAsync([Summary("The Id of the assigned custombind")]int Id)
         {
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);

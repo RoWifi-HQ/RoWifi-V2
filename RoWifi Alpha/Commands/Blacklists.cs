@@ -149,7 +149,7 @@ namespace RoWifi_Alpha.Commands
         }
 
         [Command("remove"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-        [Summary("Command to remove a blacklist")]
+        [Summary("Command to remove a blacklist"), Alias("delete")]
         public async Task<RuntimeResult> BlacklistDeleteAsync([Remainder, Summary("The Id of the assigned blacklist")] string Id)
         {
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);

@@ -90,7 +90,7 @@ namespace RoWifi_Alpha.Commands
         }
 
         [Command("delete"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-        [Summary("Command to delete a rankbind")]
+        [Summary("Command to delete a rankbind"), Alias("remove")]
         public async Task<RuntimeResult> DeleteAsync([Summary("Id of the Group")]int GroupId, 
             [Summary("The Rank Id of the Group to delete")]int RankId)
         {
