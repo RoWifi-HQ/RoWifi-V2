@@ -34,7 +34,7 @@ namespace RoWifi_Alpha.Commands
             embed.AddField("Guild Id", $"{Context.Guild.Id}", true)
                 .AddField("Member Count", $"{Context.Guild.MemberCount}", true)
                 .AddField("Shard Id", $"{Context.Client.ShardId}", true)
-                .AddField("Settings", $"Tier: {Tier}\nAutoDetection: {guild.Settings.AutoDetection}\nBlacklist Action: {guild.Settings.BlacklistAction}", true)
+                .AddField("Settings", $"Tier: {Tier}\nAutoDetection: {guild.Settings.AutoDetection}\nBlacklist Action: {guild.Settings.BlacklistAction}\nUpdate On Join: {guild.Settings.UpdateOnJoin}", true)
                 .AddField("Prefix", $"{guild.CommandPrefix ?? "!"}", true)
                 .AddField("Verification Role", $"<@&{guild.VerificationRole}>", true)
                 .AddField("Verified Role", $"<@&{guild.VerifiedRole}>", true)
@@ -140,6 +140,33 @@ namespace RoWifi_Alpha.Commands
             {
                 update = Builders<RoGuild>.Update.Set(g => g.Settings.BlacklistAction, BlacklistActionType.Ban);
                 embed.WithColor(Color.Green).WithTitle("Settings Modification Successful").WithDescription("Blacklist Action was set to `Ban`");
+            }
+            else
+                embed.WithColor(Color.Red).WithTitle("Settings Modification Failed").WithDescription("Invalid Option selected");
+            if (update != null)
+                await Database.ModifyGuild(Context.Guild.Id, update);
+            await ReplyAsync(embed: embed.Build());
+            return RoWifiResult.FromSuccess();
+        }
+
+        [Command("update-on-join"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
+        [Summary("Command to toggle the `Update On Join` setting")]
+        public async Task<RuntimeResult> SetUpdateOnJoinAsync([Summary("Choices: on/off")]string Option)
+        {
+            RoGuild guild = await Database.GetGuild(Context.Guild.Id);
+            if (guild == null)
+                return RoWifiResult.FromError("Settings Modification Failed", "Server was not setup. Please ask the server owner to set up this server.");
+            EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
+            UpdateDefinition<RoGuild> update = null;
+            if (Option.Equals("on", StringComparison.OrdinalIgnoreCase))
+            {
+                update = Builders<RoGuild>.Update.Set(g => g.Settings.UpdateOnJoin, true);
+                embed.WithColor(Color.Green).WithTitle("Settings Modification Successful").WithDescription("Update On Join was enabled");
+            }
+            else if (Option.Equals("off", StringComparison.OrdinalIgnoreCase))
+            {
+                update = Builders<RoGuild>.Update.Set(g => g.Settings.UpdateOnJoin, true);
+                embed.WithColor(Color.Green).WithTitle("Settings Modification Successful").WithDescription("Update On Join was disabled");
             }
             else
                 embed.WithColor(Color.Red).WithTitle("Settings Modification Failed").WithDescription("Invalid Option selected");

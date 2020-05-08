@@ -97,6 +97,7 @@ namespace RoWifi_Alpha.Models
         public bool AutoDetection { get; set; }
         public GuildType Type { get; set; }
         public BlacklistActionType BlacklistAction { get; set; }
+        public bool UpdateOnJoin { get; set; }
     }
 
     public enum BlacklistActionType
