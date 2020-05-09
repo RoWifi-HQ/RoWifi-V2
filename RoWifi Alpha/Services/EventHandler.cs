@@ -36,10 +36,11 @@ namespace RoWifi_Alpha.Services
 
         private async Task OnMemberJoin(SocketGuildUser arg)
         {
-            RoUser user = await Database.GetUserAsync(arg.Id);
-            if (user == null) return;
             RoGuild guild = await Database.GetGuild(arg.Guild.Id);
             if (guild == null) return;
+            if (!guild.Settings.UpdateOnJoin) return;
+            RoUser user = await Database.GetUserAsync(arg.Id);
+            if (user == null) return;
             EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
             try
             {
