@@ -10,6 +10,7 @@ using PremiumType = RoWifi_Alpha.Models.PremiumType;
 namespace RoWifi_Alpha.Commands
 {
     [Group("premium")]
+    [RequireBotPermission(ChannelPermission.EmbedLinks, ErrorMessage = "Looks like I'm missing the Embed Links Permission")]
     [Summary("Module to access premium of servers")]
     public class PremiumAdmin : ModuleBase<SocketCommandContext>
     {

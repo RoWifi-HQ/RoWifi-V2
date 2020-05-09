@@ -21,6 +21,7 @@ namespace RoWifi_Alpha.Commands
         public LoggerService Logger { get; set; }
 
         [Command("verify", RunMode = RunMode.Async), RequireContext(ContextType.Guild)]
+        [RequireBotPermission(ChannelPermission.EmbedLinks, ErrorMessage = "Looks like I'm missing the Embed Links Permission")]
         [Summary("Command to link Roblox Account to Discord Account")]
         public async Task<RuntimeResult> VerifyAsync([Summary("The Roblox Username to bind to the Discord Account")]string RobloxName = "")
         {
@@ -69,14 +70,22 @@ namespace RoWifi_Alpha.Commands
             if(Present)
             {
                 RoUser newUser = new RoUser { DiscordId = Context.User.Id, RobloxId = RobloxId.Value };
+                RoGuild guild = await Database.GetGuild(Context.Guild.Id);
                 await Database.AddUser(newUser);
-                return RoWifiResult.FromSuccess("Verification Successful", "To get your roles, run `update`. To change your linked Roblox Account, use `reverify`");
+                embed = Miscellanous.GetDefaultEmbed();
+                embed.WithColor(Color.Green).WithTitle("Verification Successful").WithDescription("To get your roles, run `update`. To change your linked Roblox Account, use `reverify`");
+                await ReplyAsync(embed: embed.Build());
+
+                if (guild.Settings.UpdateOnVerify)
+                    return await UpdateAsync();
+                return RoWifiResult.FromSuccess();
             }
             else
                 return RoWifiResult.FromError("Verification Failed", $"`{Code}` was not found in the profile. Please try again.");
         }
 
         [Command("reverify", RunMode = RunMode.Async), RequireContext(ContextType.Guild)]
+        [RequireBotPermission(ChannelPermission.EmbedLinks, ErrorMessage = "Looks like I'm missing the Embed Links Permission")]
         [Summary("Command to change linked Roblox Account")]
         public async Task<RuntimeResult> ReverifyAsync([Summary("The Roblox Username to bind to the Discord Account")]string RobloxName = "")
         {
@@ -126,8 +135,15 @@ namespace RoWifi_Alpha.Commands
             if (Present)
             {
                 RoUser newUser = new RoUser { DiscordId = Context.User.Id, RobloxId = RobloxId.Value };
+                RoGuild guild = await Database.GetGuild(Context.Guild.Id);
                 await Database.AddUser(newUser, false);
-                return RoWifiResult.FromSuccess("Verification Successful", "To get your roles, run `update`. To change your linked Roblox Account, use `reverify`");
+                embed = Miscellanous.GetDefaultEmbed();
+                embed.WithColor(Color.Green).WithTitle("Verification Successful").WithDescription("To get your roles, run `update`. To change your linked Roblox Account, use `reverify`");
+                await ReplyAsync(embed: embed.Build());
+
+                if (guild.Settings.UpdateOnVerify)
+                    return await UpdateAsync();
+                return RoWifiResult.FromSuccess();
             }
             else
                 return RoWifiResult.FromError("Verification Failed", $"`{Code}` was not found in the profile. Please try again.");
@@ -135,7 +151,8 @@ namespace RoWifi_Alpha.Commands
 
         [Command("update"), RequireContext(ContextType.Guild), Alias("getroles")]
         [RequireBotPermission(GuildPermission.ManageRoles | GuildPermission.ManageNicknames, 
-            ErrorMessage = "I cannot update users as I need the following permissions: Manage Roles, Manage Nicknames.")]
+            ErrorMessage = "Looks like I am missing one or more of the following permissions: Manage Roles, Manage Nicknames")]
+        [RequireBotPermission(ChannelPermission.EmbedLinks, ErrorMessage = "Looks like I'm missing the Embed Links Permission")]
         [Summary("Command to update a user's roles")]
         public async Task<RuntimeResult> UpdateAsync([Summary("The User to be updated")]IGuildUser member = null)
         {
@@ -194,6 +211,7 @@ namespace RoWifi_Alpha.Commands
         }
 
         [Command("userinfo"), RequireContext(ContextType.Guild)]
+        [RequireBotPermission(ChannelPermission.EmbedLinks, ErrorMessage = "Looks like I'm missing the Embed Links Permission")]
         public async Task<RuntimeResult> UserInfoAsync([Summary("The User whose info is to be viewed")]IGuildUser member = null)
         {
             if (member == null)

@@ -21,6 +21,7 @@ namespace RoWifi_Alpha.Commands
 
         [Command("setup", RunMode = RunMode.Async), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
         [Summary("Command to start configuration of the server")]
+        [RequireBotPermission(ChannelPermission.EmbedLinks, ErrorMessage = "Looks like I'm missing the Embed Links Permission")]
         [Alias("reset")]
         public async Task<RuntimeResult> SetupAsync()
         {
@@ -46,6 +47,7 @@ namespace RoWifi_Alpha.Commands
         }
 
         [Command("update-all", RunMode = RunMode.Async), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
+        [RequireBotPermission(ChannelPermission.EmbedLinks, ErrorMessage = "Looks like I'm missing the Embed Links Permission")]
         [Summary("Command to update all verified users in a server")]
         public async Task<RuntimeResult> UpdateAllAsync()
         {

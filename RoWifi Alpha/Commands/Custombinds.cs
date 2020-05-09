@@ -15,6 +15,7 @@ using System.Threading.Tasks;
 namespace RoWifi_Alpha.Commands
 {
     [Group("custombinds"), Alias("cb")]
+    [RequireBotPermission(ChannelPermission.EmbedLinks, ErrorMessage = "Looks like I'm missing the Embed Links Permission")]
     [Summary("Module to access custombinds of a server")]
     public class Custombinds : InteractiveBase<SocketCommandContext>
     {
@@ -118,7 +119,7 @@ namespace RoWifi_Alpha.Commands
         }
 
         [Command("delete"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-        [Summary("Command to delete an existing custombind")]
+        [Summary("Command to delete an existing custombind"), Alias("remove")]
         public async Task<RuntimeResult> DeleteCustombindAsync([Summary("The Id of the assigned custombind")]int Id)
         {
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);

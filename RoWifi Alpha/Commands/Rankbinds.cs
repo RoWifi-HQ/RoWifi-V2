@@ -18,6 +18,7 @@ namespace RoWifi_Alpha.Commands
 {
     [Group("rankbinds")]
     [Alias("rb")]
+    [RequireBotPermission(ChannelPermission.EmbedLinks, ErrorMessage = "Looks like I'm missing the Embed Links Permission")]
     [Summary("Module to access rankbinds of a server")]
     public class Rankbinds : InteractiveBase<SocketCommandContext>
     {
@@ -90,7 +91,7 @@ namespace RoWifi_Alpha.Commands
         }
 
         [Command("delete"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-        [Summary("Command to delete a rankbind")]
+        [Summary("Command to delete a rankbind"), Alias("remove")]
         public async Task<RuntimeResult> DeleteAsync([Summary("Id of the Group")]int GroupId, 
             [Summary("The Rank Id of the Group to delete")]int RankId)
         {

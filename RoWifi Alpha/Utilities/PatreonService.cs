@@ -17,7 +17,7 @@ namespace RoWifi_Alpha.Utilities
 
         public async Task<(string, int?)> GetPatron(string DiscordId)
         {
-            string link = "https://www.patreon.com/api/oauth2/api/campaigns/3229705/pledges?include=patron.null";
+            string link = "https://www.patreon.com/api/oauth2/v2/campaigns/3229705/members?include=currently_entitled_tiers,user&fields%5Buser%5D=social_connections";
             while (link != null)
             {
                 HttpResponseMessage response = await _client.GetAsync(new Uri(link));
@@ -29,30 +29,24 @@ namespace RoWifi_Alpha.Utilities
                 {
                     if (user["type"].ToString() == "user")
                     {
-                        JToken disc = user["attributes"]["social_connections"]["discord"];
-                        string PatreonId = user["id"].ToString();
-                        if (disc.ToString().Length > 0)
+                        JToken disc = user["attributes"]?["social_connections"]?["discord"] ?? "";
+                        if (disc.ToString().Length > 0 && disc["user_id"].ToString() == DiscordId)
                         {
-                            if (disc["user_id"].ToString() == DiscordId)
+                            string PatreonId = user["id"].ToString();
+                            foreach (JToken U in Users)
                             {
-                                foreach (JToken U in Users)
+                                if (U["relationships"]["user"]["data"]["id"].ToString() == PatreonId)
                                 {
-                                    if (U["relationships"]["patron"]["data"]["id"].ToString() == PatreonId)
-                                    {
-                                        JToken Reward = U["relationships"]["reward"];
-                                        if (Reward != null)
-                                        {
-                                            JToken Tier = Reward["data"]["id"];
-                                            return (PatreonId, (int)Tier);
-                                        }
-                                        return (PatreonId, null);
-                                    }
+                                    var Tiers = (JArray)U["relationships"]["currently_entitled_tiers"]["data"];
+                                    if (Tiers.Count > 0)
+                                        return (PatreonId, (int)Tiers[0]["id"]);
+                                    return (PatreonId, null);
                                 }
                             }
                         }
                     }
                 }
-                link = obj["links"]["next"]?.ToString();
+                link = obj["links"]?["next"]?.ToString();
             }
             return ("None", null);
         }

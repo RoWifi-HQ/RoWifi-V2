@@ -16,6 +16,7 @@ namespace RoWifi_Alpha.Commands
         public DatabaseService Database { get; set; }
 
         [Command("help")]
+        [RequireBotPermission(ChannelPermission.EmbedLinks, ErrorMessage = "Looks like I'm missing the Embed Links Permission")]
         public async Task HelpAsync([Remainder] string Command = null)
         {
             var helpEmbed = commandService.GetDefaultEmbed(Command);
@@ -23,6 +24,7 @@ namespace RoWifi_Alpha.Commands
         }
 
         [Command("support"), Alias("invite")]
+        [RequireBotPermission(ChannelPermission.EmbedLinks, ErrorMessage = "Looks like I'm missing the Embed Links Permission")]
         public async Task SupportAsync()
         {
             string DiscLink = "https://www.discord.gg/h4BGGyR";

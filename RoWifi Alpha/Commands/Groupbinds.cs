@@ -13,6 +13,7 @@ using System.Threading.Tasks;
 namespace RoWifi_Alpha.Commands
 {
     [Group("groupbinds"), Alias("gb")]
+    [RequireBotPermission(ChannelPermission.EmbedLinks, ErrorMessage = "Looks like I'm missing the Embed Links Permission")]
     [Summary("Module to access groupbinds of a server")]
     public class Groupbinds : InteractiveBase<SocketCommandContext>
     {
@@ -74,7 +75,7 @@ namespace RoWifi_Alpha.Commands
         }
 
         [Command("delete"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-        [Summary("Command to delete a groupbind")]
+        [Summary("Command to delete a groupbind"), Alias("remove")]
         public async Task<RuntimeResult> DeleteAsync([Summary("The Id of the Group to create a bind with")]int GroupId)
         {
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
