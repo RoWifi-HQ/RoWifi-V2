@@ -38,6 +38,7 @@ namespace RoWifi_Alpha.Commands
             await Database.AddBackup(backup, Name);
             EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
             embed.WithTitle("Backup successful").WithDescription($"Succesfully saved the settings of {Context.Guild.Name} in the database");
+            await ReplyAsync(embed: embed.Build());
             return RoWifiResult.FromSuccess();
         }
 
