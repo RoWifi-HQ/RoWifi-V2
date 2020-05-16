@@ -219,11 +219,7 @@ namespace RoWifi_Alpha.Utilities
         {
             try
             {
-                var check = GetBackup(backup.UserId, backup.Name);
-                if (check == null)
-                    await _backups.InsertOneAsync(backup);
-                else
-                    await _backups.FindOneAndReplaceAsync(b => b.UserId == backup.UserId && b.Name == Name, backup);
+                await _backups.InsertOneAsync(backup);
                 return true;
             }
             catch (Exception e)

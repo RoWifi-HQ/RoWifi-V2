@@ -1,4 +1,5 @@
 ﻿using Discord;
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using System;
 using System.Collections.Generic;
@@ -9,12 +10,16 @@ namespace RoWifi_Alpha.Models
 {
     public class RoBackup
     {
-        [BsonId]
+        public ObjectId Id { get; set; }
+
         [BsonElement("UserId")]
         public ulong UserId { get; set; }
 
         [BsonElement("Name")]
         public string Name { get; set; }
+
+        [BsonElement("Prefix")]
+        public string CommandPrefix { get; set; }
 
         [BsonElement("Settings")]
         public GuildSettings Settings { get; set; }
@@ -39,8 +44,10 @@ namespace RoWifi_Alpha.Models
 
         public RoBackup(ulong userId, string Name, RoGuild guild, IGuild server)
         {
+            Id = new ObjectId();
             UserId = userId;
             this.Name = Name;
+            CommandPrefix = guild.CommandPrefix;
             Settings = guild.Settings;
             VerificationRole = server.Roles.Where(r => r != null).Where(r => r.Id == guild.VerificationRole).Select(r => r.Name).FirstOrDefault();
             VerifiedRole = server.Roles.Where(r => r != null).Where(r => r.Id == guild.VerifiedRole).Select(r => r.Name).FirstOrDefault();
@@ -111,7 +118,7 @@ namespace RoWifi_Alpha.Models
             foreach (string RoleName in DiscordRoles)
             {
                 IRole role = server.Roles.Where(r => r != null).Where(r => r.Name == RoleName).FirstOrDefault();
-                if (role != null)
+                if (role == null)
                     await server.CreateRoleAsync(RoleName, isMentionable: false);
                 roles.Add(role);
             }
