@@ -81,6 +81,8 @@ namespace RoWifi_Alpha.Models
             foreach (BCustomBind bind in Custombinds)
                 guild.CustomBinds.Add(await bind.RestoreAsync(server));
             guild.Blacklists = Blacklists;
+            guild.Settings = Settings;
+            guild.CommandPrefix = CommandPrefix;
             return guild;
         }
     }
