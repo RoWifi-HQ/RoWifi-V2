@@ -32,17 +32,11 @@ namespace RoWifi_Alpha.Commands
             if (guild.Settings.Type == GuildType.Beta) Tier = "Beta";
 
             EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
-            embed.AddField("Guild Id", $"{Context.Guild.Id}", true)
-                .AddField("Member Count", $"{Context.Guild.MemberCount}", true)
-                .AddField("Shard Id", $"{Context.Client.ShardId}", true)
-                .AddField("Settings", 
-                    $"Tier: {Tier}\nAutoDetection: {guild.Settings.AutoDetection}\nBlacklist Action: {guild.Settings.BlacklistAction}" +
-                    $"\nUpdate On Join: {guild.Settings.UpdateOnJoin}\nUpdate On Verify: {guild.Settings.UpdateOnVerify}", true)
-                .AddField("Prefix", $"{guild.CommandPrefix ?? "!"}", true)
-                .AddField("Verification Role", $"<@&{guild.VerificationRole}>", true)
-                .AddField("Verified Role", $"<@&{guild.VerifiedRole}>", true)
-                .AddField("Rankbinds", $"{guild.RankBinds.Count}", true)
-                .AddField("Groupbinds", $"{guild.GroupBinds.Count}", true);
+            embed.AddField("Tier", Tier, true)
+                .AddField("Auto Detection", guild.Settings.AutoDetection, true)
+                .AddField("Blacklist Action", guild.Settings.BlacklistAction, true)
+                .AddField("Update On Join", guild.Settings.UpdateOnJoin, true)
+                .AddField("Update On Verify", guild.Settings.UpdateOnVerify, true);
             await ReplyAsync(embed: embed.Build());
             return RoWifiResult.FromSuccess();
         }

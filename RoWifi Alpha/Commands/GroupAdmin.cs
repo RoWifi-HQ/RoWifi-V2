@@ -49,6 +49,32 @@ namespace RoWifi_Alpha.Commands
             return RoWifiResult.FromSuccess();
         }
 
+        [Command("serverinfo"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
+        [Summary("Command to view server info")]
+        [RequireBotPermission(ChannelPermission.EmbedLinks, ErrorMessage = "Looks like I'm missing the Embed Links Permission")]
+        public async Task<RuntimeResult> ServerInfoAsync()
+        {
+            RoGuild guild = await Database.GetGuild(Context.Guild.Id);
+            if (guild == null)
+                return RoWifiResult.FromError("Settings Viewing Failed", "Server was not setup. Please ask the server owner to set up this server.");
+            string Tier = "Normal";
+            if (guild.Settings.Type == GuildType.Alpha) Tier = "Alpha";
+            if (guild.Settings.Type == GuildType.Beta) Tier = "Beta";
+
+            EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
+            embed.AddField("Guild Id", $"{Context.Guild.Id}", true)
+                .AddField("Member Count", $"{Context.Guild.MemberCount}", true)
+                .AddField("Shard Id", $"{Context.Client.ShardId}", true)
+                .AddField("Tier", Tier, true)
+                .AddField("Prefix", $"{guild.CommandPrefix ?? "!"}", true)
+                .AddField("Verification Role", $"<@&{guild.VerificationRole}>", true)
+                .AddField("Verified Role", $"<@&{guild.VerifiedRole}>", true)
+                .AddField("Rankbinds", $"{guild.RankBinds.Count}", true)
+                .AddField("Groupbinds", $"{guild.GroupBinds.Count}", true);
+            await ReplyAsync(embed: embed.Build());
+            return RoWifiResult.FromSuccess();
+        }
+
         [Command("update-all", RunMode = RunMode.Async), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
         [RequireBotPermission(ChannelPermission.EmbedLinks, ErrorMessage = "Looks like I'm missing the Embed Links Permission")]
         [Summary("Command to update all verified users in a server")]
