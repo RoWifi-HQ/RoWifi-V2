@@ -23,6 +23,7 @@
     <PackageReference Include="Microsoft.Extensions.Http" Version="5.0.0-preview.3.20215.2" />
     <PackageReference Include="MongoDB.Driver" Version="2.10.4" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+    <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="4.7.0" />
   </ItemGroup>
 
 </Project>
