@@ -16,10 +16,10 @@ namespace RoWifi_Alpha.Addons.Help
 
         public List<EmbedFieldBuilder> BuildInfo()
         {
-            List<EmbedFieldBuilder> Fields = new List<EmbedFieldBuilder>(); 
+            List<EmbedFieldBuilder> Fields = new List<EmbedFieldBuilder>();
             Fields.Add(new EmbedFieldBuilder().WithName("Parameters").WithValue(BuildParameters()));
 
-            if (CommandInformation.Module.Group != null && CommandInformation.Module.Name == CommandInformation.Aliases[0]) 
+            if (CommandInformation.Module.Group != null && CommandInformation.Module.Name == CommandInformation.Aliases[0])
                 Fields.Add(new EmbedFieldBuilder().WithName("Subcommands").WithValue(BuildSubCommands()));
 
             var Aliases = BuildAliases();
