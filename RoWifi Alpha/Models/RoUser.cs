@@ -89,7 +89,7 @@ namespace RoWifi_Alpha.Models
 
             (List<ulong> AddedRoles, List<ulong> RemovedRoles) = await UpdateBindRolesAsync(member, server, guild, RankBindsToAdd, GroupBindsToAdd, CustomBindsToAdd, reason);
             string DiscNick = member.Nickname ?? member.Username;
-            if ((member as SocketGuildUser).Roles.Where(r => r != null).Any(r => r.Name == "RoWifi Bypass"))
+            if (!(member as SocketGuildUser).Roles.Where(r => r != null).Any(r => r.Name == "RoWifi Nickname Bypass"))
                 DiscNick = await UpdateNicknameAsync(RobloxName, member, RankBindsToAdd, CustomBindsToAdd, reason);
 
             return (AddedRoles, RemovedRoles, DiscNick);

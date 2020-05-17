@@ -18,7 +18,7 @@ namespace RoWifi_Alpha.Addons.Help
                 IEnumerable<ModuleInfo> modules = commandService.Modules.Where(m => !m.IsSubmodule);
                 string cmdList = "";
                 foreach (ModuleInfo module in modules)
-                {   
+                {
                     if (module.Group == null)
                         foreach (var cmd in module.Commands)
                             cmdList += $"`{cmd.Name}`  ";
