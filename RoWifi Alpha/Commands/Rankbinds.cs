@@ -1,18 +1,18 @@
 ﻿using Discord;
-using RoWifi_Alpha.Addons.Interactive;
 using Discord.Commands;
-using RoWifi_Alpha.Preconditions;
-using System.Threading.Tasks;
-using RoWifi_Alpha.Models;
-using RoWifi_Alpha.Utilities;
-using System.Linq;
-using System.Collections.Generic;
-using Newtonsoft.Json.Linq;
-using System.Text.RegularExpressions;
-using MongoDB.Driver;
 using Discord.WebSocket;
-using System;
+using MongoDB.Driver;
+using Newtonsoft.Json.Linq;
+using RoWifi_Alpha.Addons.Interactive;
+using RoWifi_Alpha.Models;
+using RoWifi_Alpha.Preconditions;
 using RoWifi_Alpha.Services;
+using RoWifi_Alpha.Utilities;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace RoWifi_Alpha.Commands
 {
@@ -60,7 +60,7 @@ namespace RoWifi_Alpha.Commands
             return RoWifiResult.FromSuccess();
         }
 
-        [Command("new"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
+        [Command("new"), RequireContext(ContextType.Guild), RequireRoWifiAdmin, Priority(4)]
         [Summary("Command to add a new rankbind")]
         public async Task<RuntimeResult> NewRankbindAsync([Summary("Id of the Group to bind")]int GroupId, 
             [Summary("The Rank Id of the Group to bind [0-255]")]int RankId, 
@@ -78,6 +78,11 @@ namespace RoWifi_Alpha.Commands
             JToken RankInfo = await Roblox.GetGroupRank(GroupId, RankId);
             if (RankInfo == null)
                 return RoWifiResult.FromError("Bind Addition Failed", $"The Rank {RankId} does not exist in Group {GroupId}");
+            if (Prefix.Equals("auto"))
+            {
+                Prefix = Regex.Match((string)RankInfo["name"], @"\[(.*?)\]").Groups[1].Value;
+                Prefix = Prefix.Length == 0 ? "N/A" : $"[{Prefix}]";
+            }
 
             RankBind bind = new RankBind { GroupId = GroupId, RbxRankId = RankId, RbxGrpRoleId = (int)RankInfo["id"], Prefix = Prefix, Priority = Priority, DiscordRoles = Roles.Select(r => r.Id).ToArray() };
             UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Push(r => r.RankBinds, bind);
@@ -274,28 +279,68 @@ namespace RoWifi_Alpha.Commands
             return RoWifiResult.FromSuccess();
         }
 
-        [Command("multiple"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-        [Summary("Command to add a range of rankbinds")]
-        public async Task<RuntimeResult> MultipleAsync([Summary("Id of the Roblox Group")]int GroupId, 
-            [Summary("Rank Id from which to create binds")]int MinRank, 
-            [Summary("Rank Id till which to create binds")]int MaxRank, 
-            [Summary("The prefix to be used before the nickname")]string Prefix, 
-            [Summary("The deciding factor for the prefix conflict between two roles")]int Priority, 
-            [Summary("The Roles to be added to the bind")]params IRole[] Roles)
+        [Command("new"), RequireContext(ContextType.Guild), RequireRoWifiAdmin, Priority(3)]
+        public async Task<RuntimeResult> NewRankbindWithAuto(int GroupId, int RankId, string Prefix, int Priority, string Roles)
+        {
+            if (!Roles.Equals("auto"))
+                return RoWifiResult.FromError("Bind Addition Failed", "Invalid choice for Roles. Please try again");
+            RoGuild guild = await Database.GetGuild(Context.Guild.Id);
+            if (guild == null)
+                return RoWifiResult.FromError("Bind Addition Failed", "Server was not setup. Please ask the server owner to set up this server.");
+
+            if (guild.RankBinds.Exists(r => r.GroupId == GroupId && r.RbxRankId == RankId))
+                return RoWifiResult.FromError("Bind Addition Failed", "A bind with the given Group and Rank already exists. Please use `rankbinds modify` to modify rankbinds");
+
+            JToken RankInfo = await Roblox.GetGroupRank(GroupId, RankId);
+            if (RankInfo == null)
+                return RoWifiResult.FromError("Bind Addition Failed", $"The Rank {RankId} does not exist in Group {GroupId}");
+            IRole Role = Context.Guild.Roles.Where(r => r.Name == RankInfo["name"].ToString()).FirstOrDefault();
+            if (Role == null) 
+                Role = await Context.Guild.CreateRoleAsync(RankInfo["name"].ToString(), isMentionable: false);
+            if (Prefix.Equals("auto"))
+            {
+                Prefix = Regex.Match((string)RankInfo["name"], @"\[(.*?)\]").Groups[1].Value;
+                Prefix = Prefix.Length == 0 ? "N/A" : $"[{Prefix}]";
+            }
+
+            RankBind bind = new RankBind { GroupId = GroupId, RbxRankId = RankId, RbxGrpRoleId = (int)RankInfo["id"], Prefix = Prefix, Priority = Priority, DiscordRoles = new ulong[] {Role.Id} };
+            UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Push(r => r.RankBinds, bind);
+            await Database.ModifyGuild(Context.Guild.Id, update);
+            EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
+            embed.WithColor(Color.Green).WithTitle("Bind Addition Successful")
+                .AddField($"Rank: {bind.RbxRankId}", $"Prefix: {bind.Prefix}\nPriority: {bind.Priority}\nRoles: {string.Concat(bind.DiscordRoles.Select(r => $" <@&{ r}> "))}", true);
+            await ReplyAsync(embed: embed.Build());
+            await Logger.LogAction(Context.Guild, Context.User, $"Rank Bind Addition - Group {bind.GroupId}", $"Rank Id: {bind.RbxRankId}", $"Prefix: {bind.Prefix}\nPriority: {bind.Priority}\nRoles: {string.Concat(bind.DiscordRoles.Select(r => $" <@&{ r}> "))}");
+            return RoWifiResult.FromSuccess();
+        }
+
+        [Command("new"), RequireContext(ContextType.Guild), RequireRoWifiAdmin, Priority(2)]
+        public async Task<RuntimeResult> MultipleRankbinds(int GroupId, string RankId, string Prefix, int Priority, params IRole[] Roles)
         {
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)
                 return RoWifiResult.FromError("Bind Addition Failed", "Server was not setup. Please ask the server owner to set up this server.");
-            
-            List<JToken> TokensToAdd = await Roblox.GetGroupRolesInRange(GroupId, MinRank, MaxRank);
-            if (TokensToAdd.Count == 0)
-                return RoWifiResult.FromError("Bind Addition Failed", "There are no ranks between the given rank ids. Pleasr try again");
 
-            foreach (JToken item in TokensToAdd)
+            var Ranks = RankId.Split('-');
+            if (Ranks.Length != 2)
+                return RoWifiResult.FromError("Bind Addition Failed", "Invalid Rank Id Range");
+            bool Success = int.TryParse(Ranks[0], out int MinRank);
+            Success = int.TryParse(Ranks[1], out int MaxRank);
+            if (!Success)
+                return RoWifiResult.FromError("Bind Addition Failed", "Unable to find Rank Id Range");
+
+            List<JToken> TokensToAdd = await Roblox.GetGroupRolesInRange(GroupId, MinRank, MaxRank);
+            foreach(JToken RankInfo in TokensToAdd)
             {
-                RankBind bind = guild.RankBinds.Where(r => r.RbxGrpRoleId == (int)item["id"]).FirstOrDefault();
+                RankBind bind = guild.RankBinds.Where(r => r.RbxGrpRoleId == (int)RankInfo["id"]).FirstOrDefault();
+                string PrefixToAdd = Prefix;
+                if (Prefix.Equals("auto"))
+                {
+                    PrefixToAdd = Regex.Match((string)RankInfo["name"], @"\[(.*?)\]").Groups[1].Value;
+                    PrefixToAdd = PrefixToAdd.Length == 0 ? "N/A" : $"[{PrefixToAdd}]";
+                }
                 if (bind == null)
-                    guild.RankBinds.Add(new RankBind { GroupId = GroupId, RbxRankId = (int)item["rank"], RbxGrpRoleId = (int)item["id"], Prefix = Prefix, Priority = Priority, DiscordRoles = Roles.Select(r => r.Id).ToArray() });
+                    guild.RankBinds.Add(new RankBind { GroupId = GroupId, RbxRankId = (int)RankInfo["rank"], RbxGrpRoleId = (int)RankInfo["id"], Prefix = PrefixToAdd, Priority = Priority, DiscordRoles = Roles.Select(r => r.Id).ToArray() });
                 else
                 {
                     if (bind.Prefix != Prefix)
@@ -316,36 +361,49 @@ namespace RoWifi_Alpha.Commands
             return RoWifiResult.FromSuccess();
         }
 
-        [Command("auto"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-        [Summary("Command to auto add rankbinds from the Roblox Group")]
-        public async Task<RuntimeResult> AutoRankbindsAsync([Summary("Id of the Roblox Group")]int GroupId, 
-            [Summary("The deciding factor for the prefix conflict between two roles")]int Priority, 
-            [Summary("The Roles to be added to the binds")]params IRole[] Roles)
+        [Command("new"), RequireContext(ContextType.Guild), RequireRoWifiAdmin, Priority(1)]
+        public async Task<RuntimeResult> MultipleRankbindsWithAuto(int GroupId, string RankId, string Prefix, int Priority, string Roles)
         {
+            if (!Roles.Equals("auto"))
+                return RoWifiResult.FromError("Bind Addition Failed", "Invalid choice for Roles. Please try again");
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)
                 return RoWifiResult.FromError("Bind Addition Failed", "Server was not setup. Please ask the server owner to set up this server.");
 
-            List<JToken> TokensToAdd = await Roblox.GetGroupRolesInRange(GroupId, 1, 255);
-            if (TokensToAdd.Count == 0)
-                return RoWifiResult.FromError("Bind Addition Failed", "There are no ranks between the given rank ids. Pleasr try again");
+            var Ranks = RankId.Split('-');
+            if (Ranks.Length != 2)
+                return RoWifiResult.FromError("Bind Addition Failed", "Invalid Rank Id Range");
+            bool Success = int.TryParse(Ranks[0], out int MinRank);
+            Success = int.TryParse(Ranks[1], out int MaxRank);
+            if (!Success)
+                return RoWifiResult.FromError("Bind Addition Failed", "Unable to find Rank Id Range");
 
-            foreach (JToken item in TokensToAdd)
+            List<JToken> TokensToAdd = await Roblox.GetGroupRolesInRange(GroupId, MinRank, MaxRank);
+            foreach (JToken RankInfo in TokensToAdd)
             {
-                RankBind bind = guild.RankBinds.Where(r => r.RbxGrpRoleId == (int)item["id"]).FirstOrDefault();
-                string Prefix = Regex.Match((string)item["name"], @"\[(.*?)\]").Groups[1].Value;
-                Prefix = Prefix.Length == 0 ? "N/A" : $"[{Prefix}]";
+                RankBind bind = guild.RankBinds.Where(r => r.RbxGrpRoleId == (int)RankInfo["id"]).FirstOrDefault();
+                string PrefixToAdd = Prefix;
+                if (Prefix.Equals("auto"))
+                {
+                    PrefixToAdd = Regex.Match((string)RankInfo["name"], @"\[(.*?)\]").Groups[1].Value;
+                    PrefixToAdd = PrefixToAdd.Length == 0 ? "N/A" : $"[{PrefixToAdd}]";
+                }
+                string RoleName = RankInfo["name"].ToString().Trim();
+                IRole RoleToAdd = Context.Guild.Roles.Where(r => r.Name.Equals(RoleName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+                Console.WriteLine(RankInfo["name"]);
+                Console.WriteLine(RoleToAdd?.Id);
+                if (RoleToAdd == null)
+                    RoleToAdd = await Context.Guild.CreateRoleAsync(RoleName, isMentionable: false);
                 if (bind == null)
-                    guild.RankBinds.Add(new RankBind { GroupId = GroupId, RbxRankId = (int)item["rank"], RbxGrpRoleId = (int)item["id"], Prefix = Prefix, Priority = Priority, DiscordRoles = Roles.Select(r => r.Id).ToArray() });
+                    guild.RankBinds.Add(new RankBind { GroupId = GroupId, RbxRankId = (int)RankInfo["rank"], RbxGrpRoleId = (int)RankInfo["id"], Prefix = PrefixToAdd, Priority = Priority, DiscordRoles = new ulong[] { RoleToAdd.Id } });
                 else
                 {
-                    if (bind.Prefix != Prefix)
-                        bind.Prefix = Prefix;
+                    if (bind.Prefix != PrefixToAdd)
+                        bind.Prefix = PrefixToAdd;
                     if (bind.Priority != Priority)
                         bind.Priority = Priority;
-                    foreach (IRole role in Roles)
-                        if (!bind.DiscordRoles.Contains(role.Id))
-                            bind.DiscordRoles.Append(role.Id);
+                    if (!bind.DiscordRoles.Contains(RoleToAdd.Id))
+                        bind.DiscordRoles.Append(RoleToAdd.Id);
                     int Index = guild.RankBinds.IndexOf(bind);
                     guild.RankBinds[Index] = bind;
                 }

@@ -109,7 +109,12 @@ namespace RoWifi_Alpha.Models
             else
                 Prefix = custom.Priority > nickBind.Priority ? custom.Prefix : nickBind.Prefix;
 
-            DiscNick = (Prefix == "N/A" ? "" : (Prefix + " ")) + RobloxName;
+            if (Prefix.Equals("N/A", StringComparison.OrdinalIgnoreCase))
+                DiscNick = RobloxName;
+            else if (Prefix.Equals("Disable", StringComparison.OrdinalIgnoreCase))
+                DiscNick = member.Nickname;
+            else
+                DiscNick = Prefix + " " + RobloxName;   
             if (member.Nickname != DiscNick)
                 await member.ModifyAsync(m => { m.Nickname = DiscNick; }, new RequestOptions { AuditLogReason = reason});
             return DiscNick;
