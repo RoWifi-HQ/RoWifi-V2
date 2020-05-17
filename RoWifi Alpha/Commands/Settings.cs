@@ -32,17 +32,11 @@ namespace RoWifi_Alpha.Commands
             if (guild.Settings.Type == GuildType.Beta) Tier = "Beta";
 
             EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
-            embed.AddField("Guild Id", $"{Context.Guild.Id}", true)
-                .AddField("Member Count", $"{Context.Guild.MemberCount}", true)
-                .AddField("Shard Id", $"{Context.Client.ShardId}", true)
-                .AddField("Settings", 
-                    $"Tier: {Tier}\nAutoDetection: {guild.Settings.AutoDetection}\nBlacklist Action: {guild.Settings.BlacklistAction}" +
-                    $"\nUpdate On Join: {guild.Settings.UpdateOnJoin}\nUpdate On Verify: {guild.Settings.UpdateOnVerify}", true)
-                .AddField("Prefix", $"{guild.CommandPrefix ?? "!"}", true)
-                .AddField("Verification Role", $"<@&{guild.VerificationRole}>", true)
-                .AddField("Verified Role", $"<@&{guild.VerifiedRole}>", true)
-                .AddField("Rankbinds", $"{guild.RankBinds.Count}", true)
-                .AddField("Groupbinds", $"{guild.GroupBinds.Count}", true);
+            embed.AddField("Tier", Tier, true)
+                .AddField("Auto Detection", guild.Settings.AutoDetection, true)
+                .AddField("Blacklist Action", guild.Settings.BlacklistAction, true)
+                .AddField("Update On Join", guild.Settings.UpdateOnJoin, true)
+                .AddField("Update On Verify", guild.Settings.UpdateOnVerify, true);
             await ReplyAsync(embed: embed.Build());
             return RoWifiResult.FromSuccess();
         }
@@ -191,12 +185,12 @@ namespace RoWifi_Alpha.Commands
             if (Option.Equals("on", StringComparison.OrdinalIgnoreCase))
             {
                 update = Builders<RoGuild>.Update.Set(g => g.Settings.UpdateOnVerify, true);
-                embed.WithColor(Color.Green).WithTitle("Settings Modification Successful").WithDescription("Update On Join was enabled");
+                embed.WithColor(Color.Green).WithTitle("Settings Modification Successful").WithDescription("Update On Verify was enabled");
             }
             else if (Option.Equals("off", StringComparison.OrdinalIgnoreCase))
             {
                 update = Builders<RoGuild>.Update.Set(g => g.Settings.UpdateOnVerify, false);
-                embed.WithColor(Color.Green).WithTitle("Settings Modification Successful").WithDescription("Update On Join was disabled");
+                embed.WithColor(Color.Green).WithTitle("Settings Modification Successful").WithDescription("Update On Verify was disabled");
             }
             else
                 embed.WithColor(Color.Red).WithTitle("Settings Modification Failed").WithDescription("Invalid Option selected");

@@ -1,4 +1,5 @@
 ﻿using Discord;
+using Discord.WebSocket;
 using MongoDB.Bson.Serialization.Attributes;
 using RoWifi_Alpha.Exceptions;
 using RoWifi_Alpha.Utilities;
@@ -87,7 +88,9 @@ namespace RoWifi_Alpha.Models
             }
 
             (List<ulong> AddedRoles, List<ulong> RemovedRoles) = await UpdateBindRolesAsync(member, server, guild, RankBindsToAdd, GroupBindsToAdd, CustomBindsToAdd, reason);
-            string DiscNick = await UpdateNicknameAsync(RobloxName, member, RankBindsToAdd, CustomBindsToAdd, reason);
+            string DiscNick = member.Nickname ?? member.Username;
+            if ((member as SocketGuildUser).Roles.Where(r => r != null).Any(r => r.Name == "RoWifi Bypass"))
+                DiscNick = await UpdateNicknameAsync(RobloxName, member, RankBindsToAdd, CustomBindsToAdd, reason);
 
             return (AddedRoles, RemovedRoles, DiscNick);
         }
@@ -109,7 +112,12 @@ namespace RoWifi_Alpha.Models
             else
                 Prefix = custom.Priority > nickBind.Priority ? custom.Prefix : nickBind.Prefix;
 
-            DiscNick = (Prefix == "N/A" ? "" : (Prefix + " ")) + RobloxName;
+            if (Prefix.Equals("N/A", StringComparison.OrdinalIgnoreCase))
+                DiscNick = RobloxName;
+            else if (Prefix.Equals("Disable", StringComparison.OrdinalIgnoreCase))
+                DiscNick = member.Nickname;
+            else
+                DiscNick = Prefix + " " + RobloxName;   
             if (member.Nickname != DiscNick)
                 await member.ModifyAsync(m => { m.Nickname = DiscNick; }, new RequestOptions { AuditLogReason = reason});
             return DiscNick;
