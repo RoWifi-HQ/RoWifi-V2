@@ -11,7 +11,6 @@ using RoWifi_Alpha.Exceptions;
 using RoWifi_Alpha.Models;
 using RoWifi_Alpha.Services;
 using RoWifi_Alpha.Utilities;
-using System.Diagnostics;
 
 namespace RoWifi_Alpha.Commands
 {
@@ -20,9 +19,6 @@ namespace RoWifi_Alpha.Commands
         public DatabaseService Database { get; set; }
         public RobloxService Roblox { get; set; }
         public LoggerService Logger { get; set; }
-
-        private PerformanceCounter CPUCounter = new PerformanceCounter("Process", "% Processor Time", Process.GetCurrentProcess().ProcessName);
-        private PerformanceCounter MemCounter = new PerformanceCounter("Process", "Working Set", Process.GetCurrentProcess().ProcessName);
 
         [Command("verify", RunMode = RunMode.Async), RequireContext(ContextType.Guild)]
         [RequireBotPermission(ChannelPermission.EmbedLinks, ErrorMessage = "Looks like I'm missing the Embed Links Permission")]
@@ -235,18 +231,6 @@ namespace RoWifi_Alpha.Commands
                 .AddField("Discord Id", user.DiscordId);
             await ReplyAsync(embed: embed.Build());
             return RoWifiResult.FromSuccess();
-        }
-
-        [Command("botinfo"), RequireContext(ContextType.Guild)]
-        public async Task BotInfoAsync()
-        {
-            EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
-            embed.AddField("Language", "C#", true)
-                .AddField("Library", "Discord.NET", true)
-                .AddField("Version", "2.1.0", true)
-                .AddField("CPU Usage", CPUCounter.NextValue(), true)
-                .AddField("Memory Usage", MemCounter.NextValue(), true);
-            await ReplyAsync(embed: embed.Build());
         }
     }
 }
