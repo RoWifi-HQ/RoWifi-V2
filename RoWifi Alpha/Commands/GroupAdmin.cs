@@ -39,7 +39,10 @@ namespace RoWifi_Alpha.Commands
                 return RoWifiResult.FromError("Setup Failed", "Failed to detect a response or there was no mentioned role in the response");
             guild.VerifiedRole = response.MentionedRoles.First().Id;
 
-            await Database.AddGuild(guild, await Database.GetGuild(Context.Guild.Id) == null);
+            RoGuild Existing = await Database.GetGuild(Context.Guild.Id);
+            if (Existing != null)
+                guild.CommandPrefix = Existing.CommandPrefix;
+            await Database.AddGuild(guild, Existing == null);
             EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
             embed.WithTitle("Setup Successful").WithDescription("Server has been setup successfully. Use `rankbinds new` or `groupbinds new` to start setting up your binds");
             await ReplyAsync(embed: embed.Build());

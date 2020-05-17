@@ -191,12 +191,12 @@ namespace RoWifi_Alpha.Commands
             if (Option.Equals("on", StringComparison.OrdinalIgnoreCase))
             {
                 update = Builders<RoGuild>.Update.Set(g => g.Settings.UpdateOnVerify, true);
-                embed.WithColor(Color.Green).WithTitle("Settings Modification Successful").WithDescription("Update On Join was enabled");
+                embed.WithColor(Color.Green).WithTitle("Settings Modification Successful").WithDescription("Update On Verify was enabled");
             }
             else if (Option.Equals("off", StringComparison.OrdinalIgnoreCase))
             {
                 update = Builders<RoGuild>.Update.Set(g => g.Settings.UpdateOnVerify, false);
-                embed.WithColor(Color.Green).WithTitle("Settings Modification Successful").WithDescription("Update On Join was disabled");
+                embed.WithColor(Color.Green).WithTitle("Settings Modification Successful").WithDescription("Update On Verify was disabled");
             }
             else
                 embed.WithColor(Color.Red).WithTitle("Settings Modification Failed").WithDescription("Invalid Option selected");
