@@ -36,6 +36,8 @@ namespace RoWifi_Alpha.Commands
                 SocketMessage response = await NextMessageAsync(new EnsureSourceUserCriterion(), TimeSpan.FromMinutes(5));
                 if (response == null)
                     return RoWifiResult.FromError("Verification Failed", "Command timed out. Please try again");
+                if (response.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase))
+                    return RoWifiResult.FromError("Verification Failed", "Command has been cancelled");
                 RobloxName = response.Content;
             }
 
@@ -60,6 +62,8 @@ namespace RoWifi_Alpha.Commands
             SocketMessage response2 = await NextMessageAsync(criterion, TimeSpan.FromMinutes(5));
             if(response2 == null)
                 return RoWifiResult.FromError("Verification Failed", "Command timed out. Please try again");
+            if (response2.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase))
+                return RoWifiResult.FromError("Verification Failed", "Command has been cancelled");
             bool Present;
             try
             {
@@ -99,6 +103,8 @@ namespace RoWifi_Alpha.Commands
                 SocketMessage response = await NextMessageAsync(new EnsureSourceUserCriterion(), TimeSpan.FromMinutes(5));
                 if (response == null)
                     return RoWifiResult.FromError("Verification Failed", "Command timed out. Please try again");
+                if (response.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase))
+                    return RoWifiResult.FromError("Verification Failed", "Command has been cancelled");
                 RobloxName = response.Content;
             }
 
@@ -124,6 +130,8 @@ namespace RoWifi_Alpha.Commands
             SocketMessage response2 = await NextMessageAsync(criterion, TimeSpan.FromMinutes(5));
             if (response2 == null)
                 return RoWifiResult.FromError("Verification Failed", "Command timed out. Please try again");
+            if (response2.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase))
+                return RoWifiResult.FromError("Verification Failed", "Command has been cancelled");
 
             bool Present;
             try

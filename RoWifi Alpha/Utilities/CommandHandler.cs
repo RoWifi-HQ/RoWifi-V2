@@ -80,6 +80,7 @@ namespace RoWifi_Alpha.Utilities
                 switch(err)
                 {
                     case CommandError.BadArgCount:
+                    case CommandError.ParseFailed:
                     {
                         var help  = context.Message.Content.Replace(GetPrefix(context.Guild.Id), "");
                         var helpEmbed = _commands.GetDefaultEmbed(help);

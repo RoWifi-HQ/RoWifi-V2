@@ -32,7 +32,7 @@ namespace RoWifi_Alpha.Addons.Help
             {
                 helpEmbed.WithTitle("Help").WithDescription($"`{moduleMatch.Name}`: {moduleMatch.Summary ?? "No description found"}");
                 string Commands = "";
-                foreach (var Cmd in moduleMatch.Commands)
+                foreach (var Cmd in moduleMatch.Commands.GroupBy(c => c.Name).Select(c => c.First()))
                     if (Cmd.Name != "GroupCommand")
                         Commands += $"`{Cmd.Name}`  ";
                 if (Commands.Length > 0)
@@ -57,7 +57,7 @@ namespace RoWifi_Alpha.Addons.Help
                 SearchResult search = commandService.Search(command);
                 if (search.IsSuccess)
                 {
-                    var cmd = search.Commands.Last().Command;
+                    var cmd = search.Commands.OrderByDescending(c => c.Command.Priority).FirstOrDefault().Command;
                     var cmdName = cmd.Name.Length == 0 ? cmd.Module.Name : cmd.Name;
                     helpEmbed.WithTitle("Help").WithDescription($"`{cmdName}`: {cmd.Summary ?? "No description found"}");
                     var CmdInfo = new CommandHelpInfo(cmd);
