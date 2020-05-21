@@ -3,7 +3,9 @@ using Discord.Commands;
 using RoWifi_Alpha.Addons.Help;
 using RoWifi_Alpha.Models;
 using RoWifi_Alpha.Utilities;
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using PremiumType = RoWifi_Alpha.Models.PremiumType;
 
@@ -41,6 +43,20 @@ namespace RoWifi_Alpha.Commands
             Premium premium = new Premium { DiscordId = user.Id, PatreonId = 0, DiscordServers = new List<ulong>(), PType = PremiumType.Beta };
             bool Success = await Database.AddPremium(premium);
             await ReplyAsync(Success ? "Success" : "Failure");
+        }
+
+        [Command("botinfo"), RequireBotPermission(ChannelPermission.EmbedLinks)]
+        public async Task BotInfoAsync()
+        {
+            EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
+            embed.AddField("Name", Context.Client.CurrentUser.Username + "#" + Context.Client.CurrentUser.Discriminator, true)
+                .AddField("Version", "2.1.1", true)
+                .AddField("Language", "C#", true)
+                .AddField("Shards", Environment.GetEnvironmentVariable("TOTAL_SHARDS"), true)
+                .AddField("Shard Id", Context.Client.ShardId, true)
+                .AddField("Servers", Context.Client.Guilds.Count, true)
+                .AddField("Members", Context.Client.Guilds.Select(g => g.MemberCount).Sum(), true);
+            await ReplyAsync(embed: embed.Build());
         }
     }
 }
