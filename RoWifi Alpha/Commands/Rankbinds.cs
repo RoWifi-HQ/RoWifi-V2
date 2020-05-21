@@ -280,6 +280,7 @@ namespace RoWifi_Alpha.Commands
         }
 
         [Command("new"), RequireContext(ContextType.Guild), RequireRoWifiAdmin, Priority(3)]
+        [RequireBotPermission(ChannelPermission.ManageRoles)]
         public async Task<RuntimeResult> NewRankbindWithAuto(int GroupId, int RankId, string Prefix, int Priority, string Roles)
         {
             if (!Roles.Equals("auto"))
@@ -362,6 +363,7 @@ namespace RoWifi_Alpha.Commands
         }
 
         [Command("new"), RequireContext(ContextType.Guild), RequireRoWifiAdmin, Priority(1)]
+        [RequireBotPermission(ChannelPermission.ManageRoles)]
         public async Task<RuntimeResult> MultipleRankbindsWithAuto(int GroupId, string RankId, string Prefix, int Priority, string Roles)
         {
             if (!Roles.Equals("auto"))
