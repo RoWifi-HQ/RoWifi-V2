@@ -103,7 +103,7 @@ namespace RoWifi_Alpha.Utilities.RoLang
         private void Number()
         {
             while (IsDigit(Peek())) Advance();
-            AddToken(TokenType.NUMBER, int.Parse(source[start..current]));
+            AddToken(TokenType.NUMBER, ulong.Parse(source[start..current]));
         }
 
         private void Identifier()

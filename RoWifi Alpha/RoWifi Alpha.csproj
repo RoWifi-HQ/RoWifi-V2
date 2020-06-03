@@ -8,19 +8,16 @@
 
   <ItemGroup>
     <PackageReference Include="Coravel" Version="3.6.1" />
-    <PackageReference Include="Discord.Addons.Hosting" Version="2.1.0" />
-    <PackageReference Include="Discord.Net.Commands" Version="2.3.0-dev-20200507.9" />
-    <PackageReference Include="Discord.Net.Core" Version="2.3.0-dev-20200507.9" />
-    <PackageReference Include="Discord.Net.Rest" Version="2.3.0-dev-20200507.9" />
-    <PackageReference Include="Discord.Net.Webhook" Version="2.3.0-dev-20200507.9" />
-    <PackageReference Include="Discord.Net.WebSocket" Version="2.3.0-dev-20200507.9" />
+    <PackageReference Include="DSharpPlus" Version="4.0.0-nightly-00699" />
+    <PackageReference Include="DSharpPlus.CommandsNext" Version="4.0.0-nightly-00699" />
+    <PackageReference Include="DSharpPlus.Interactivity" Version="4.0.0-nightly-00699" />
     <PackageReference Include="Google.Cloud.Logging.V2" Version="3.0.0" />
     <PackageReference Include="Google.Cloud.Monitoring.V3" Version="2.1.0-beta01" />
     <PackageReference Include="Google.Cloud.Translation.V2" Version="2.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="5.0.0-preview.3.20215.2" />
-    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="5.0.0-preview.3.20215.2" />
-    <PackageReference Include="Microsoft.Extensions.Hosting" Version="5.0.0-preview.3.20215.2" />
-    <PackageReference Include="Microsoft.Extensions.Http" Version="5.0.0-preview.3.20215.2" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="5.0.0-preview.4.20251.6" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="5.0.0-preview.4.20251.6" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" Version="5.0.0-preview.4.20251.6" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="5.0.0-preview.4.20251.6" />
     <PackageReference Include="MongoDB.Driver" Version="2.10.4" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
   </ItemGroup>

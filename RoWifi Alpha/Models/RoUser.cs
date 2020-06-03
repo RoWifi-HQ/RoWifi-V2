@@ -1,5 +1,4 @@
-﻿using Discord;
-using Discord.WebSocket;
+﻿using DSharpPlus.Entities;
 using MongoDB.Bson.Serialization.Attributes;
 using RoWifi_Alpha.Exceptions;
 using RoWifi_Alpha.Utilities;
@@ -19,15 +18,15 @@ namespace RoWifi_Alpha.Models
         [BsonElement("RobloxId")]
         public int RobloxId { get; set; }
 
-        public async Task<(List<ulong>, List<ulong>, string)> UpdateAsync(RobloxService Roblox, IGuild server, RoGuild guild, IGuildUser member, string reason = "Update")
+        public async Task<(List<ulong>, List<ulong>, string)> UpdateAsync(RobloxService Roblox, DiscordGuild server, RoGuild guild, DiscordMember member, string reason = "Update")
         {
-            IRole VerificationRole = server.Roles.Where(r => r != null).Where(r => r.Id == guild.VerificationRole).FirstOrDefault();
-            if (VerificationRole != null && member.RoleIds.Contains(VerificationRole.Id))
-                await member.RemoveRoleAsync(VerificationRole, new RequestOptions { AuditLogReason = reason });
+            DiscordRole VerificationRole = server.Roles.Values.Where(r => r != null).Where(r => r.Id == guild.VerificationRole).FirstOrDefault();
+            if (VerificationRole != null && member.Roles.Contains(VerificationRole))
+                await member.RevokeRoleAsync(VerificationRole, reason);
 
-            IRole VerifiedRole = server.Roles.Where(r => r != null).Where(r => r.Id == guild.VerifiedRole).FirstOrDefault();
-            if (VerifiedRole != null && !member.RoleIds.Contains(VerifiedRole.Id))
-                await member.AddRoleAsync(VerifiedRole, new RequestOptions { AuditLogReason = reason });
+            DiscordRole VerifiedRole = server.Roles.Values.Where(r => r != null).Where(r => r.Id == guild.VerifiedRole).FirstOrDefault();
+            if (VerifiedRole != null && !member.Roles.Contains(VerifiedRole))
+                await member.GrantRoleAsync(VerifiedRole, reason);
 
             Dictionary<int, int> userRoleIds = await Roblox.GetUserRoles(RobloxId);
             string RobloxName = await Roblox.GetUsernameFromId(RobloxId);
@@ -44,16 +43,16 @@ namespace RoWifi_Alpha.Models
                 {
                     try
                     {
-                        IDMChannel Channel = await member.GetOrCreateDMChannelAsync();
+                        DiscordDmChannel Channel = await member.CreateDmChannelAsync();
                         await Channel.SendMessageAsync($"You were found on the server blacklist in {server.Name}. Reason: {Success.Reason}");
                     }
                     catch (Exception) { }
                     try 
                     {
                         if (guild.Settings.BlacklistAction == BlacklistActionType.Ban)
-                            await server.AddBanAsync(member, reason: "User was found on the server blacklist");
+                            await server.BanMemberAsync(member, reason: "User was found on the server blacklist");
                         else if (guild.Settings.BlacklistAction == BlacklistActionType.Kick)
-                            await member.KickAsync("User was found on the server blacklist");
+                            await member.RemoveAsync("User was found on the server blacklist");
                     } 
                     catch(Exception) { }
                     throw new BlacklistException(Success.Reason);
@@ -89,13 +88,13 @@ namespace RoWifi_Alpha.Models
 
             (List<ulong> AddedRoles, List<ulong> RemovedRoles) = await UpdateBindRolesAsync(member, server, guild, RankBindsToAdd, GroupBindsToAdd, CustomBindsToAdd, reason);
             string DiscNick = member.Nickname ?? member.Username;
-            if (!(member as SocketGuildUser).Roles.Where(r => r != null).Any(r => r.Name == "RoWifi Nickname Bypass"))
+            if (!member.Roles.Where(r => r != null).Any(r => r.Name == "RoWifi Nickname Bypass"))
                 DiscNick = await UpdateNicknameAsync(RobloxName, member, RankBindsToAdd, CustomBindsToAdd, reason);
 
             return (AddedRoles, RemovedRoles, DiscNick);
         }
 
-        private async Task<string> UpdateNicknameAsync(string RobloxName, IGuildUser member, List<RankBind> RankBindsToAdd, List<CustomBind> CustomBindsToAdd, string reason)
+        private async Task<string> UpdateNicknameAsync(string RobloxName, DiscordMember member, List<RankBind> RankBindsToAdd, List<CustomBind> CustomBindsToAdd, string reason)
         {
             string DiscNick;
 
@@ -119,37 +118,38 @@ namespace RoWifi_Alpha.Models
             else
                 DiscNick = Prefix + " " + RobloxName;   
             if (member.Nickname != DiscNick)
-                await member.ModifyAsync(m => { m.Nickname = DiscNick; }, new RequestOptions { AuditLogReason = reason});
+                await member.ModifyAsync(m => { m.Nickname = DiscNick; m.AuditLogReason = reason; });
             return DiscNick;
         }
 
-        private async Task<(List<ulong> AddedRoles, List<ulong> RemovedRoles)> UpdateBindRolesAsync(IGuildUser member, IGuild server, RoGuild guild, List<RankBind> RankBindsToAdd, List<GroupBind> GroupBindsToAdd, List<CustomBind> CustomBindsToAdd, string reason)
+        private async Task<(List<ulong> AddedRoles, List<ulong> RemovedRoles)> UpdateBindRolesAsync(DiscordMember member, DiscordGuild server, RoGuild guild, List<RankBind> RankBindsToAdd, List<GroupBind> GroupBindsToAdd, List<CustomBind> CustomBindsToAdd, string reason)
         {
-            List<IRole> AddedRoles = new List<IRole>();
-            List<IRole> RemovedRoles = new List<IRole>();
+            List<DiscordRole> AddedRoles = new List<DiscordRole>();
+            List<DiscordRole> RemovedRoles = new List<DiscordRole>();
             List<ulong> RolesToAdd = new List<ulong>();
             RolesToAdd.AddRange(RankBindsToAdd.SelectMany(r => r.DiscordRoles));
             RolesToAdd.AddRange(GroupBindsToAdd.SelectMany(r => r.DiscordRoles));
             RolesToAdd.AddRange(CustomBindsToAdd.SelectMany(r => r.DiscordRoles));
 
-            List<ulong> CurrentRoles = member.RoleIds.ToList();
+            List<DiscordRole> CurrentRoles = member.Roles.ToList();
 
             foreach (ulong BindRole in guild.GetUniqueRoles())
             {
-                IRole Role = server.Roles.Where(r => r != null).Where(r => r.Id == BindRole).FirstOrDefault();
-                if (Role != null)
+                bool Success = server.Roles.TryGetValue(BindRole, out DiscordRole Role);
+                if (Success)
                 {
-                    if (RolesToAdd.Contains(BindRole) && !CurrentRoles.Contains(BindRole))
+                    if (RolesToAdd.Contains(BindRole) && !CurrentRoles.Contains(Role))
+                    {
+                        await member.GrantRoleAsync(Role, reason);
                         AddedRoles.Add(Role);
-                    else if (!RolesToAdd.Contains(BindRole) && CurrentRoles.Contains(BindRole))
+                    }
+                    else if (!RolesToAdd.Contains(BindRole) && CurrentRoles.Contains(Role))
+                    {
+                        await member.RevokeRoleAsync(Role, reason);
                         RemovedRoles.Add(Role);
+                    }
                 }
             }
-            if(AddedRoles.Count > 0)
-                await member.AddRolesAsync(AddedRoles, new RequestOptions { AuditLogReason = reason });
-            if (RemovedRoles.Count > 0)
-            await member.RemoveRolesAsync(RemovedRoles, new RequestOptions { AuditLogReason = reason });
-
             return (AddedRoles.Select(r => r.Id).ToList(), RemovedRoles.Select(r => r.Id).ToList());
         }
     }

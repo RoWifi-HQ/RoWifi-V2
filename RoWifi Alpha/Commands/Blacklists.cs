@@ -1,10 +1,12 @@
-﻿using Discord;
-using Discord.Commands;
-using Discord.WebSocket;
+﻿using DSharpPlus;
+using DSharpPlus.CommandsNext;
+using DSharpPlus.CommandsNext.Attributes;
+using DSharpPlus.Entities;
+using DSharpPlus.Interactivity;
 using MongoDB.Driver;
-using RoWifi_Alpha.Addons.Interactive;
+using RoWifi_Alpha.Attributes;
+using RoWifi_Alpha.Exceptions;
 using RoWifi_Alpha.Models;
-using RoWifi_Alpha.Preconditions;
 using RoWifi_Alpha.Services;
 using RoWifi_Alpha.Utilities;
 using System;
@@ -14,32 +16,33 @@ using System.Threading.Tasks;
 
 namespace RoWifi_Alpha.Commands
 {
-    [Group("blacklists"), Alias("blacklist", "bl")]
-    [RequireBotPermission(ChannelPermission.EmbedLinks, ErrorMessage = "Looks like I'm missing the Embed Links Permission")]
-    [Summary("Module to blacklist users from a server")]
-    public class Blacklists : InteractiveBase<SocketCommandContext>
+    [Group("blacklists"), Aliases("blacklist", "bl")]
+    [RequireBotPermissions(Permissions.EmbedLinks)]
+    [Description("Module to blacklist users from a server")]
+    public class Blacklists : BaseCommandModule
     {
         public DatabaseService Database { get; set; }
         public RobloxService Roblox { get; set; }
         public LoggerService Logger { get; set; }
 
-        [Command(RunMode = RunMode.Async), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-        [Summary("View users blacklisted from the server")]
-        public async Task<RuntimeResult> GroupCommand()
+        [GroupCommand, RequireGuild, RequireRoWifiAdmin]
+        [Description("View users blacklisted from the server")]
+        public async Task GroupCommand(CommandContext Context)
         {
+            var interactivity = Context.Client.GetInteractivity();
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)
-                return RoWifiResult.FromError("Blacklist Viewing Failed", "Server was not setup. Please ask the server owner to set up this server.");
+                throw new CommandException("Blacklist Viewing Failed", "Server was not setup. Please ask the server owner to set up this server.");
             if (guild.Blacklists == null || guild.Blacklists.Count == 0)
-                return RoWifiResult.FromError("Blacklist Viewing Failed", "There are no blacklists associated with this server");
+                throw new CommandException("Blacklist Viewing Failed", "There are no blacklists associated with this server");
 
-            List<EmbedBuilder> embeds = new List<EmbedBuilder>();
+            List<Page> pages = new List<Page>();
             var BlacklistList = guild.Blacklists.Select((x, i) => new { Index = i, Value = x }).GroupBy(x => x.Index / 12).Select(x => x.Select(v => v.Value).ToList());
             int Page = 1;
 
             foreach (List<RoBlacklist> blacklists in BlacklistList)
             {
-                EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
+                DiscordEmbedBuilder embed = Miscellanous.GetDefaultEmbed();
                 embed.WithTitle("Blacklists").WithDescription($"Page {Page}");
                 foreach (RoBlacklist blacklist in guild.Blacklists)
                 {
@@ -50,124 +53,122 @@ namespace RoWifi_Alpha.Commands
                     else if (blacklist.Type == BlacklistType.Custom)
                         embed.AddField($"Code: {blacklist.Id}", $"Type: Custom\nReason: {blacklist.Reason}", true);
                 }
-                embeds.Add(embed);
+                pages.Add(new Page(embed: embed));
                 Page++;
             }
             if (Page == 2)
-                await ReplyAsync(embed: embeds[0].Build());
+                await Context.RespondAsync(embed: pages[0].Embed);
             else
-                await PagedReplyAsync(embeds);
-            return RoWifiResult.FromSuccess();
+                await interactivity.SendPaginatedMessageAsync(Context.Channel, Context.User, pages);
         }
 
-        [Command("name"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-        [Summary("Command to blacklist a user from Roblox Username")]
-        public async Task<RuntimeResult> BlacklistNameAsync([Summary("The Roblox Username of the user to blacklist")] string Name, 
-            [Remainder, Summary("The reason to blacklist the user for")] string Reason = "")
+        [Command("name"), RequireGuild, RequireRoWifiAdmin]
+        [Description("Command to blacklist a user from Roblox Username")]
+        public async Task BlacklistNameAsync(CommandContext Context, [Description("The Roblox Username of the user to blacklist")] string Name, 
+            [RemainingText, Description("The reason to blacklist the user for")] string Reason = "")
         {
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)
-                return RoWifiResult.FromError("Blacklist Addition Failed", "Server was not setup. Please ask the server owner to set up this server.");
+                throw new CommandException("Blacklist Addition Failed", "Server was not setup. Please ask the server owner to set up this server.");
 
             int? RobloxId = await Roblox.GetIdFromUsername(Name);
             if (RobloxId == null)
-                return RoWifiResult.FromError("Blacklist Addition Failed", "There was no Roblox Id found associated with this name");
+                throw new CommandException("Blacklist Addition Failed", "There was no Roblox Id found associated with this name");
             if (Reason.Length == 0)
                 Reason = "N/A";
 
             RoBlacklist blacklist = new RoBlacklist(RobloxId.ToString(), Reason, BlacklistType.Name);
             UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Push(g => g.Blacklists, blacklist);
             await Database.ModifyGuild(Context.Guild.Id, update);
-            EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
-            embed.WithColor(Color.Green).WithTitle("Blacklist Addition Successful")
+            DiscordEmbedBuilder embed = Miscellanous.GetDefaultEmbed();
+            embed.WithColor(DiscordColor.Green).WithTitle("Blacklist Addition Successful")
                 .AddField($"Id: {blacklist.Id}", $"Type: Id\nReason: {blacklist.Reason}");
-            await ReplyAsync(embed: embed.Build());
+            await Context.RespondAsync(embed: embed.Build());
             await Logger.LogAction(Context.Guild, Context.User, "Blacklist Addition", $"Id: {blacklist.Id}", $"Type: Id\nReason: {blacklist.Reason}");
-            return RoWifiResult.FromSuccess();
         }
 
-        [Command("group"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-        [Summary("Command to blacklist an entire group")]
-        public async Task<RuntimeResult> BlacklistGroupAsync([Summary("The Id of the Roblox group to blacklist")]int Id, 
-            [Remainder, Summary("The reason to blacklist the group for")] string Reason = "")
+        [Command("group"), RequireGuild, RequireRoWifiAdmin]
+        [Description("Command to blacklist an entire group")]
+        public async Task BlacklistGroupAsync(CommandContext Context, [Description("The Id of the Roblox group to blacklist")]int Id, 
+            [RemainingText, Description("The reason to blacklist the group for")] string Reason = "")
         {
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)
-                return RoWifiResult.FromError("Blacklist Addition Failed", "Server was not setup. Please ask the server owner to set up this server.");
+                throw new CommandException("Blacklist Addition Failed", "Server was not setup. Please ask the server owner to set up this server.");
             if (Reason.Length == 0)
                 Reason = "N/A";
 
             RoBlacklist blacklist = new RoBlacklist(Id.ToString(), Reason, BlacklistType.Group);
             UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Push(g => g.Blacklists, blacklist);
             await Database.ModifyGuild(Context.Guild.Id, update);
-            EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
-            embed.WithColor(Color.Green).WithTitle("Blacklist Addition Successful")
+            DiscordEmbedBuilder embed = Miscellanous.GetDefaultEmbed();
+            embed.WithColor(DiscordColor.Green).WithTitle("Blacklist Addition Successful")
                 .AddField($"Id: {blacklist.Id}", $"Type: Group\nReason: {blacklist.Reason}");
-            await ReplyAsync(embed: embed.Build());
+            await Context.RespondAsync(embed: embed.Build());
             await Logger.LogAction(Context.Guild, Context.User, "Blacklist Addition", $"Id: {blacklist.Id}", $"Type: Group\nReason: {blacklist.Reason}");
-            return RoWifiResult.FromSuccess();
         }
 
-        [Command("custom", RunMode = RunMode.Async), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-        [Summary("Command to create your own blacklists")]
-        public async Task<RuntimeResult> BlacklistCustomAsync([Remainder, Summary("The custom code to define the blacklist")] string Code)
+        [Command("custom"), RequireGuild, RequireRoWifiAdmin]
+        [Description("Command to create your own blacklists")]
+        public async Task BlacklistCustomAsync(CommandContext Context, [RemainingText, Description("The custom code to define the blacklist")] string Code)
         {
+            if (Code.Length == 0)
+                throw new CommandException("Blacklist Addition Failed", "The blacklist code should not empty");
+            var interactivity = Context.Client.GetInteractivity();
             RoUser user = await Database.GetUserAsync(Context.User.Id);
             if (user == null)
-                return RoWifiResult.FromError("Blacklist Addition Failed", "You must be verified to use this feature");
+                throw new CommandException("Blacklist Addition Failed", "You must be verified to use this feature");
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)
-                return RoWifiResult.FromError("Blacklist Addition Failed", "Server was not setup. Please ask the server owner to set up this server.");
+                throw new CommandException("Blacklist Addition Failed", "Server was not setup. Please ask the server owner to set up this server.");
 
             try
             {
                 RoCommand cmd = new RoCommand(Code);
                 Dictionary<int, int> Ranks = await Roblox.GetUserRoles(user.RobloxId);
                 string Username = await Roblox.GetUsernameFromId(user.RobloxId);
-                RoCommandUser CommandUser = new RoCommandUser(user, Context.User as IGuildUser, Ranks, Username);
+                RoCommandUser CommandUser = new RoCommandUser(user, Context.Member, Ranks, Username);
                 cmd.Evaluate(CommandUser);
             }
             catch (Exception e)
             {
-                return RoWifiResult.FromError("Blacklist Addition Failed", $"Command Error: {e.Message}");
+                throw new CommandException("Blacklist Addition Failed", $"Command Error: {e.Message}");
             }
 
-            await ReplyAsync("Enter the reason of this blacklist.\nSay `cancel` if you wish to cancel this command");
-            SocketMessage response = await NextMessageAsync(new EnsureSourceUserCriterion());
-            if (response == null || response.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase))
-                return RoWifiResult.FromError("Blacklist Addition Failed", "Command has been cancelled");
-            string Reason = response.Content;
+            await Context.RespondAsync("Enter the reason of this blacklist.\nSay `cancel` if you wish to cancel this command");
+            var response = await interactivity.WaitForMessageAsync(xm => xm.Author.Id == Context.User.Id);
+            if (response.TimedOut || response.Result.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase))
+                throw new CommandException("Blacklist Addition Failed", "Command has been cancelled");
+            string Reason = response.Result.Content;
 
             RoBlacklist blacklist = new RoBlacklist(Code, Reason, BlacklistType.Custom);
             UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Push(g => g.Blacklists, blacklist);
             await Database.ModifyGuild(Context.Guild.Id, update);
-            EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
-            embed.WithColor(Color.Green).WithTitle("Bind Addition Successful")
+            DiscordEmbedBuilder embed = Miscellanous.GetDefaultEmbed();
+            embed.WithColor(DiscordColor.Green).WithTitle("Bind Addition Successful")
                 .AddField($"Id: {blacklist.Id}", $"Type: Custom\nReason: {blacklist.Reason}");
-            await ReplyAsync(embed: embed.Build());
+            await Context.RespondAsync(embed: embed.Build());
             await Logger.LogAction(Context.Guild, Context.User, "Blacklist Addition", $"Id: {blacklist.Id}", $"Type: Custom\nReason: {blacklist.Reason}");
-            return RoWifiResult.FromSuccess();
         }
 
-        [Command("remove"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-        [Summary("Command to remove a blacklist"), Alias("delete")]
-        public async Task<RuntimeResult> BlacklistDeleteAsync([Remainder, Summary("The Id of the assigned blacklist")] string Id)
+        [Command("remove"), RequireGuild, RequireRoWifiAdmin]
+        [Description("Command to remove a blacklist"), Aliases("delete")]
+        public async Task BlacklistDeleteAsync(CommandContext Context, [RemainingText, Description("The Id of the assigned blacklist")] string Id)
         {
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)
-                return RoWifiResult.FromError("Blacklist Removal Failed", "Server was not setup. Please ask the server owner to set up this server.");
+                throw new CommandException("Blacklist Removal Failed", "Server was not setup. Please ask the server owner to set up this server.");
             if (guild.Blacklists == null || guild.Blacklists.Count == 0)
-                return RoWifiResult.FromError("Blacklist Removal Failed", "There are no blacklists associated with this server");
+                throw new CommandException("Blacklist Removal Failed", "There are no blacklists associated with this server");
             RoBlacklist blacklist = guild.Blacklists.Where(b => b.Id == Id).FirstOrDefault();
             if (blacklist == null)
-                return RoWifiResult.FromError("Blacklist Removal Failed", "There was no blacklist found associated with the given Id");
+                throw new CommandException("Blacklist Removal Failed", "There was no blacklist found associated with the given Id");
             UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Pull(g => g.Blacklists, blacklist);
             await Database.ModifyGuild(Context.Guild.Id, update);
-            EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
-            embed.WithColor(Color.Green).WithTitle("Blacklist Removal Successful").WithDescription($"The blacklist with Id {Id} was successfully deleted");
-            await ReplyAsync(embed: embed.Build());
+            DiscordEmbedBuilder embed = Miscellanous.GetDefaultEmbed();
+            embed.WithColor(DiscordColor.Green).WithTitle("Blacklist Removal Successful").WithDescription($"The blacklist with Id {Id} was successfully deleted");
+            await Context.RespondAsync(embed: embed.Build());
             await Logger.LogAction(Context.Guild, Context.User, "Blacklist Deletion", $"Id: {blacklist.Id}", $"Reason: {blacklist.Reason}");
-            return RoWifiResult.FromSuccess();
         }
     }
 }

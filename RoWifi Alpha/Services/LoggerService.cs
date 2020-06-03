@@ -1,11 +1,11 @@
 ﻿using Coravel.Invocable;
-using Discord;
-using Discord.Webhook;
-using Discord.WebSocket;
+using DSharpPlus;
+using DSharpPlus.Entities;
 using Google.Api;
 using Google.Api.Gax.ResourceNames;
 using Google.Cloud.Monitoring.V3;
 using Google.Protobuf.WellKnownTypes;
+using Microsoft.Extensions.DependencyInjection;
 using RoWifi_Alpha.Utilities;
 using System;
 using System.Collections.Generic;
@@ -16,28 +16,31 @@ namespace RoWifi_Alpha.Services
 {
     public class LoggerService : IInvocable
     {
-        /*public DiscordWebhookClient DebugWebhook = new DiscordWebhookClient(Environment.GetEnvironmentVariable("LOG_DEBUG"));
-        public DiscordWebhookClient PremiumWebhook = new DiscordWebhookClient(Environment.GetEnvironmentVariable("LOG_PREMIUM"));
-        public DiscordWebhookClient MainWebhook = new DiscordWebhookClient(Environment.GetEnvironmentVariable("LOG_MAIN"));*/
+        private readonly DiscordWebhookClient Webhooks;
+        private readonly DiscordWebhook Debug;
+        private readonly DiscordWebhook Premium;
+        private readonly DiscordWebhook Main;
 
         private static readonly DateTime s_unixEpoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
-        private readonly string projectId = "ro-wifi";
+        private readonly string projectId = "rowifi";
         private readonly MetricServiceClient MetricClient = MetricServiceClient.Create();
 
-        private readonly IServiceProvider _provider;
-        private readonly DiscordSocketClient _client;
+        private readonly DiscordClient _client;
 
-        public LoggerService(IServiceProvider provider, DiscordSocketClient client)
+        public LoggerService(IServiceProvider services)
         {
-            _provider = provider;
-            _client = client;
+            _client = services.GetService<DiscordClient>();
+            Webhooks = new DiscordWebhookClient();
+            Debug = Webhooks.AddWebhookAsync(new Uri(Environment.GetEnvironmentVariable("LOG_DEBUG"))).GetAwaiter().GetResult();
+            Premium = Webhooks.AddWebhookAsync(new Uri(Environment.GetEnvironmentVariable("LOG_PREMIUM"))).GetAwaiter().GetResult();
+            Main = Webhooks.AddWebhookAsync(new Uri(Environment.GetEnvironmentVariable("LOG_MAIN"))).GetAwaiter().GetResult();
         }
 
-        public async Task LogServer(IGuild guild, Embed embed)
+        public async Task LogServer(DiscordGuild guild, DiscordEmbed embed)
         {
             try
             {
-                ITextChannel channel = (await guild.GetTextChannelsAsync()).Where(r => r.Name == "rowifi-logs").FirstOrDefault();
+                DiscordChannel channel = guild.Channels.Values.Where(r => r.Name == "rowifi-logs").FirstOrDefault();
                 if (channel != null)
                 {
                     await channel.SendMessageAsync(embed: embed);
@@ -48,22 +51,31 @@ namespace RoWifi_Alpha.Services
 
         public async Task LogDebug(string text)
         {
-            //await DebugWebhook.SendMessageAsync(text);
+            await Debug.ExecuteAsync(new DiscordWebhookBuilder 
+            { 
+                Content = text
+            });
         }
 
         public async Task LogEvent(string text)
         {
-            //await MainWebhook.SendMessageAsync(text);
+            await Main.ExecuteAsync(new DiscordWebhookBuilder
+            {
+                Content = text
+            });
         }
 
         public async Task LogPremium(string text)
         {
-            //await PremiumWebhook.SendMessageAsync(text);
+            await Premium.ExecuteAsync(new DiscordWebhookBuilder
+            {
+                Content = text
+            });
         }
 
-        public async Task LogAction(IGuild guild, SocketUser user, params object[] values)
+        public async Task LogAction(DiscordGuild guild, DiscordUser user, params object[] values)
         {
-            EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
+            DiscordEmbedBuilder embed = Miscellanous.GetDefaultEmbed();
             embed.WithTitle($"Action by {user.Username}").WithDescription(values[0].ToString())
                 .AddField(values[1].ToString(), values[2].ToString());
             await LogServer(guild, embed.Build());
@@ -93,7 +105,7 @@ namespace RoWifi_Alpha.Services
         public async Task LogMetrics()
         {
             var guildData = GetMetricInfo("guilds", _client.ShardId, _client.Guilds.Count);
-            var usersData = GetMetricInfo("users", _client.ShardId, _client.Guilds.Select(g => g.MemberCount).Sum());
+            var usersData = GetMetricInfo("users", _client.ShardId, _client.Guilds.Select(g => g.Value.MemberCount).Sum());
 
             ProjectName name = new ProjectName(projectId);
             IEnumerable<TimeSeries> timeSeries = new List<TimeSeries> { guildData, usersData };
