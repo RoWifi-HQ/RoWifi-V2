@@ -2,11 +2,12 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Discord;
-using RoWifi_Alpha.Addons.Interactive;
-using Discord.Commands;
-using Discord.Net;
-using Discord.WebSocket;
+using DSharpPlus;
+using DSharpPlus.CommandsNext;
+using DSharpPlus.CommandsNext.Attributes;
+using DSharpPlus.Entities;
+using DSharpPlus.Exceptions;
+using DSharpPlus.Interactivity;
 using RoWifi_Alpha.Exceptions;
 using RoWifi_Alpha.Models;
 using RoWifi_Alpha.Services;
@@ -14,62 +15,50 @@ using RoWifi_Alpha.Utilities;
 
 namespace RoWifi_Alpha.Commands
 {
-    public class UserAdmin : InteractiveBase<SocketCommandContext>
+    public class UserAdmin : BaseCommandModule
     {
         public DatabaseService Database { get; set; }
         public RobloxService Roblox { get; set; }
         public LoggerService Logger { get; set; }
 
-        [Command("verify", RunMode = RunMode.Async), RequireContext(ContextType.Guild)]
-        [RequireBotPermission(ChannelPermission.EmbedLinks, ErrorMessage = "Looks like I'm missing the Embed Links Permission")]
-        [Summary("Command to link Roblox Account to Discord Account")]
-        public async Task<RuntimeResult> VerifyAsync([Summary("The Roblox Username to bind to the Discord Account")]string RobloxName = "")
+        [Command("verify"), RequireGuild]
+        [RequireBotPermissions(Permissions.EmbedLinks)]
+        [Description("Command to link Roblox Account to Discord Account")]
+        public async Task VerifyAsync(CommandContext Context, [Description("The Roblox Username to bind to the Discord Account")]string RobloxName = "")
         {
-            EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
+            var interactivity = Context.Client.GetInteractivity();
+            DiscordEmbedBuilder embed = Miscellanous.GetDefaultEmbed();
             RoUser user = await Database.GetUserAsync(Context.User.Id);
             if (user != null)
-                return RoWifiResult.FromError("User Already Verified", "To change your verified account, use `reverify`. To get your roles, use `update`");
+                throw new CommandException("User Already Verified", "To change your verified account, use `reverify`. To get your roles, use `update`");
 
             if (RobloxName.Length == 0)
             {
-                await ReplyAsync("Enter your Roblox Name.\nSay `cancel` if you wish to cancel this command");
-                SocketMessage response = await NextMessageAsync(new EnsureSourceUserCriterion(), TimeSpan.FromMinutes(5));
-                if (response == null)
-                    return RoWifiResult.FromError("Verification Failed", "Command timed out. Please try again");
-                if (response.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase))
-                    return RoWifiResult.FromError("Verification Failed", "Command has been cancelled");
-                RobloxName = response.Content;
+                await Context.RespondAsync("Enter your Roblox Name.\nSay `cancel` if you wish to cancel this command");
+                var response = await interactivity.WaitForMessageAsync(xm => xm.Author.Id == Context.User.Id);
+                if (response.TimedOut)
+                    throw new CommandException("Verification Failed", "Command timed out. Please try again");
+                if (response.Result.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase))
+                    throw new CommandException("Verification Failed", "Command has been cancelled");
+                RobloxName = response.Result.Content;
             }
 
-            int? RobloxId;
-            try
-            {
-                RobloxId = await Roblox.GetIdFromUsername(RobloxName);
-                if (RobloxId == null)
-                    return RoWifiResult.FromError("Verification Failed", "Invalid Roblox Username. Please try again");
-            }
-            catch (Exception)  { return RoWifiResult.FromRobloxError("Verification Failed"); }
+            int? RobloxId = await Roblox.GetIdFromUsername(RobloxName);
+            if (RobloxId == null)
+                throw new CommandException("Verification Failed", "Invalid Roblox Username. Please try again");
 
             string Code = Miscellanous.GenerateCode();
             embed.AddField("Verification Process", "Enter the following code in your Roblox status/description")
                 .AddField("Code", Code)
                 .AddField("Further Instructions", "After doing so, reply to me saying 'done'.");
-            await ReplyAsync(embed: embed.Build());
+            await Context.RespondAsync(embed: embed.Build());
 
-            var criterion = new Criteria<SocketMessage>()
-                .AddCriterion(new EnsureSourceUserCriterion())
-                .AddCriterion(new EnsureContentCriterion("done", "cancel"));
-            SocketMessage response2 = await NextMessageAsync(criterion, TimeSpan.FromMinutes(5));
-            if(response2 == null)
-                return RoWifiResult.FromError("Verification Failed", "Command timed out. Please try again");
-            if (response2.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase))
-                return RoWifiResult.FromError("Verification Failed", "Command has been cancelled");
-            bool Present;
-            try
-            {
-                Present = await Roblox.CheckCode(RobloxId.Value, Code);
-            }
-            catch(Exception) { return RoWifiResult.FromRobloxError("Verification Failed"); }
+            var response2 = await interactivity.WaitForMessageAsync(xm => xm.Author.Id == Context.User.Id && (xm.Content.Equals("done", StringComparison.OrdinalIgnoreCase) || xm.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase)));
+            if(response2.TimedOut)
+                throw new CommandException("Verification Failed", "Command timed out. Please try again");
+            if (response2.Result.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase))
+                throw new CommandException("Verification Failed", "Command has been cancelled");
+            bool Present = await Roblox.CheckCode(RobloxId.Value, Code);
 
             if(Present)
             {
@@ -77,68 +66,54 @@ namespace RoWifi_Alpha.Commands
                 RoGuild guild = await Database.GetGuild(Context.Guild.Id);
                 await Database.AddUser(newUser);
                 embed = Miscellanous.GetDefaultEmbed();
-                embed.WithColor(Color.Green).WithTitle("Verification Successful").WithDescription("To get your roles, run `update`. To change your linked Roblox Account, use `reverify`");
-                await ReplyAsync(embed: embed.Build());
+                embed.WithColor(DiscordColor.Green).WithTitle("Verification Successful").WithDescription("To get your roles, run `update`. To change your linked Roblox Account, use `reverify`");
+                await Context.RespondAsync(embed: embed.Build());
 
                 if (guild.Settings.UpdateOnVerify)
-                    return await UpdateAsync();
-                return RoWifiResult.FromSuccess();
+                    await UpdateAsync(Context);;
             }
             else
-                return RoWifiResult.FromError("Verification Failed", $"`{Code}` was not found in the profile. Please try again.");
+                throw new CommandException("Verification Failed", $"`{Code}` was not found in the profile. Please try again.");
         }
 
-        [Command("reverify", RunMode = RunMode.Async), RequireContext(ContextType.Guild)]
-        [RequireBotPermission(ChannelPermission.EmbedLinks, ErrorMessage = "Looks like I'm missing the Embed Links Permission")]
-        [Summary("Command to change linked Roblox Account")]
-        public async Task<RuntimeResult> ReverifyAsync([Summary("The Roblox Username to bind to the Discord Account")]string RobloxName = "")
+        [Command("reverify"), RequireGuild]
+        [RequireBotPermissions(Permissions.EmbedLinks)]
+        [Description("Command to change linked Roblox Account")]
+        public async Task ReverifyAsync(CommandContext Context, [Description("The Roblox Username to bind to the Discord Account")]string RobloxName = "")
         {
+            var interactivity = Context.Client.GetInteractivity();
             RoUser user = await Database.GetUserAsync(Context.User.Id);
             if (user == null)
-                return RoWifiResult.FromError("User Not Verified", "To verify your account, use `verify`");
+                throw new CommandException("User Not Verified", "To verify your account, use `verify`");
 
             if (RobloxName.Length == 0)
             {
-                await ReplyAsync("Enter your Roblox Name.\nSay `cancel` if you wish to cancel this command");
-                SocketMessage response = await NextMessageAsync(new EnsureSourceUserCriterion(), TimeSpan.FromMinutes(5));
-                if (response == null)
-                    return RoWifiResult.FromError("Verification Failed", "Command timed out. Please try again");
-                if (response.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase))
-                    return RoWifiResult.FromError("Verification Failed", "Command has been cancelled");
-                RobloxName = response.Content;
+                await Context.RespondAsync("Enter your Roblox Name.\nSay `cancel` if you wish to cancel this command");
+                var response = await interactivity.WaitForMessageAsync(xm => xm.Author.Id == Context.User.Id);
+                if (response.TimedOut)
+                    throw new CommandException("Verification Failed", "Command timed out. Please try again");
+                if (response.Result.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase))
+                    throw new CommandException("Verification Failed", "Command has been cancelled");
+                RobloxName = response.Result.Content;
             }
 
-            int? RobloxId;
-            try
-            {
-                RobloxId = await Roblox.GetIdFromUsername(RobloxName);
-                if (RobloxId == null)
-                    return RoWifiResult.FromError("Verification Failed", "Invalid Roblox Username. Please try again");
-            }
-            catch (Exception) { return RoWifiResult.FromRobloxError("Verification Failed"); }
+            int? RobloxId = await Roblox.GetIdFromUsername(RobloxName);
+            if (RobloxId == null)
+                throw new CommandException("Verification Failed", "Invalid Roblox Username. Please try again");
 
             string Code = Miscellanous.GenerateCode();
-            EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
+            DiscordEmbedBuilder embed = Miscellanous.GetDefaultEmbed();
             embed.AddField("Verification Process", "Enter the following code in your Roblox status/description")
                 .AddField("Code", Code)
                 .AddField("Further Instructions", "After doing so, reply to me saying 'done'.");
-            await ReplyAsync(embed: embed.Build());
+            await Context.RespondAsync(embed: embed.Build());
 
-            var criterion = new Criteria<SocketMessage>()
-                .AddCriterion(new EnsureSourceUserCriterion())
-                .AddCriterion(new EnsureContentCriterion("done", "cancel"));
-            SocketMessage response2 = await NextMessageAsync(criterion, TimeSpan.FromMinutes(5));
-            if (response2 == null)
-                return RoWifiResult.FromError("Verification Failed", "Command timed out. Please try again");
-            if (response2.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase))
-                return RoWifiResult.FromError("Verification Failed", "Command has been cancelled");
-
-            bool Present;
-            try
-            {
-                Present = await Roblox.CheckCode(RobloxId.Value, Code);
-            }
-            catch (Exception) { return RoWifiResult.FromRobloxError("Verification Failed"); }
+            var response2 = await interactivity.WaitForMessageAsync(xm => xm.Author.Id == Context.User.Id && (xm.Content.Equals("done", StringComparison.OrdinalIgnoreCase) || xm.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase)));
+            if (response2.TimedOut)
+                throw new CommandException("Verification Failed", "Command timed out. Please try again");
+            if (response2.Result.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase))
+                throw new CommandException("Verification Failed", "Command has been cancelled");
+            bool Present = await Roblox.CheckCode(RobloxId.Value, Code);
 
             if (Present)
             {
@@ -146,38 +121,35 @@ namespace RoWifi_Alpha.Commands
                 RoGuild guild = await Database.GetGuild(Context.Guild.Id);
                 await Database.AddUser(newUser, false);
                 embed = Miscellanous.GetDefaultEmbed();
-                embed.WithColor(Color.Green).WithTitle("Verification Successful").WithDescription("To get your roles, run `update`. To change your linked Roblox Account, use `reverify`");
-                await ReplyAsync(embed: embed.Build());
+                embed.WithColor(DiscordColor.Green).WithTitle("Verification Successful").WithDescription("To get your roles, run `update`. To change your linked Roblox Account, use `reverify`");
+                await Context.RespondAsync(embed: embed.Build());
 
                 if (guild.Settings.UpdateOnVerify)
-                    return await UpdateAsync();
-                return RoWifiResult.FromSuccess();
+                    await UpdateAsync(Context);
             }
             else
-                return RoWifiResult.FromError("Verification Failed", $"`{Code}` was not found in the profile. Please try again.");
+                throw new CommandException("Verification Failed", $"`{Code}` was not found in the profile. Please try again.");
         }
 
-        [Command("update"), RequireContext(ContextType.Guild), Alias("getroles")]
-        [RequireBotPermission(GuildPermission.ManageRoles | GuildPermission.ManageNicknames, 
-            ErrorMessage = "Looks like I am missing one or more of the following permissions: Manage Roles, Manage Nicknames")]
-        [RequireBotPermission(ChannelPermission.EmbedLinks, ErrorMessage = "Looks like I'm missing the Embed Links Permission")]
-        [Summary("Command to update a user's roles")]
-        public async Task<RuntimeResult> UpdateAsync([Summary("The User to be updated")]IGuildUser member = null)
+        [Command("update"), RequireGuild, Aliases("getroles")]
+        [RequireBotPermissions(Permissions.ManageRoles | Permissions.ManageNicknames | Permissions.EmbedLinks)]
+        [Description("Command to update a user's roles")]
+        public async Task UpdateAsync(CommandContext Context, [Description("The User to be updated")]DiscordMember member = null)
         {
             if (member == null)
-                member = (IGuildUser)Context.User;
-            EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
+                member = Context.Member;
+            DiscordEmbedBuilder embed = Miscellanous.GetDefaultEmbed();
             RoUser user = await Database.GetUserAsync(member.Id);
             if(user == null)
-                return RoWifiResult.FromError("Update Failed", "User was not verified. Please ask the user to verify.");
-            if((member as SocketGuildUser).Roles.Where(r => r != null).Any(r => r.Name == "RoWifi Bypass"))
-                return RoWifiResult.FromError("Update Skipped", "`RoWifi Bypass` was found in the user roles. Update may not be performed in this user.");
-            if (Context.Guild.OwnerId == member.Id)
-                return RoWifiResult.FromError("Update Skipped", "Due to Discord limitations, we are unable to update the server owner");
+                throw new CommandException("Update Failed", "User was not verified. Please ask the user to verify.");
+            if(member.Roles.Where(r => r != null).Any(r => r.Name == "RoWifi Bypass"))
+                throw new CommandException("Update Skipped", "`RoWifi Bypass` was found in the user roles. Update may not be performed in this user.");
+            if (member.IsOwner)
+                throw new CommandException("Update Skipped", "Due to Discord limitations, we are unable to update the server owner");
 
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)
-                return RoWifiResult.FromError("Update Failed", "Server was not setup. Please ask the server owner to set up this server.");
+                throw new CommandException("Update Failed", "Server was not setup. Please ask the server owner to set up this server.");
             try
             {
                 (List<ulong> AddedRoles, List<ulong> RemovedRoles, string DiscNick) = await user.UpdateAsync(Roblox, Context.Guild, guild, member);
@@ -192,53 +164,45 @@ namespace RoWifi_Alpha.Commands
                 RemoveStr = RemoveStr.Length == 0 ? "None" : RemoveStr;
                 DiscNick = DiscNick.Length == 0 ? "None" : DiscNick;
 
-                var fields = new List<EmbedFieldBuilder>() 
-                {
-                    new EmbedFieldBuilder().WithName("Nickname").WithValue(DiscNick),
-                    new EmbedFieldBuilder().WithName("Added Roles").WithValue(AddStr),
-                    new EmbedFieldBuilder().WithName("Removed Roles").WithValue(RemoveStr)
-                };
+                embed.AddField("Nickname", DiscNick)
+                    .AddField("Added Roles", AddStr)
+                    .AddField("Removed Roles", RemoveStr)
+                    .WithColor(DiscordColor.Green)
+                    .WithTitle("Update");
 
-                embed.WithFields(fields).WithColor(Color.Green).WithTitle("Update");
-                await ReplyAsync(embed: embed.Build());
+                await Context.RespondAsync(embed: embed.Build());
                 await Logger.LogServer(Context.Guild, embed.Build());
-                return RoWifiResult.FromSuccess();
             }
-            catch(HttpException)
+            catch(UnauthorizedException)
             {
-                return RoWifiResult.FromError("Update Failed", "We were unable to give you one or more roles since they seem to present above the bot's role"); ;
-            }
-            catch(RobloxException)
-            {
-                return RoWifiResult.FromRobloxError("Update Failed");
+                throw new CommandException("Update Failed", "We were unable to give you one or more roles since they seem to present above the bot's role"); ;
             }
             catch(BlacklistException)
             {
-                return RoWifiResult.FromError("Update Failed", "User was found on the server blacklist");
+                throw new CommandException("Update Failed", "User was found on the server blacklist");
             }
         }
 
-        [Command("userinfo"), RequireContext(ContextType.Guild)]
-        [RequireBotPermission(ChannelPermission.EmbedLinks, ErrorMessage = "Looks like I'm missing the Embed Links Permission")]
-        public async Task<RuntimeResult> UserInfoAsync([Summary("The User whose info is to be viewed")]IGuildUser member = null)
+        [Command("userinfo"), RequireGuild]
+        [RequireBotPermissions(Permissions.EmbedLinks)]
+        public async Task UserInfoAsync(CommandContext Context, [Description("The User whose info is to be viewed")]DiscordMember member = null)
         {
             if (member == null)
-                member = Context.User as IGuildUser;
+                member = Context.Member;
 
             RoUser user = await Database.GetUserAsync(member.Id);
             if (user == null)
-                return RoWifiResult.FromError("User Information Failed", "User was not verified. Please ask the user to verify.");
+                throw new CommandException("User Information Failed", "User was not verified. Please ask the user to verify.");
 
             string Username = await Roblox.GetUsernameFromId(user.RobloxId);
-            EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
+            DiscordEmbedBuilder embed = Miscellanous.GetDefaultEmbed();
             embed.WithTitle(member.Username)
                 .WithDescription("Profile Information")
-                .WithThumbnailUrl($"http://www.roblox.com/Thumbs/Avatar.ashx?x=150&y=150&Format=Png&username={Username}")
+                .WithThumbnail($"http://www.roblox.com/Thumbs/Avatar.ashx?x=150&y=150&Format=Png&username={Username}")
                 .AddField("Username", Username)
-                .AddField("Roblox Id", user.RobloxId)
-                .AddField("Discord Id", user.DiscordId);
-            await ReplyAsync(embed: embed.Build());
-            return RoWifiResult.FromSuccess();
+                .AddField("Roblox Id", user.RobloxId.ToString())
+                .AddField("Discord Id", user.DiscordId.ToString());
+            await Context.RespondAsync(embed: embed.Build());
         }
     }
 }

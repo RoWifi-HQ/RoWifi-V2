@@ -1,6 +1,9 @@
-﻿using Discord;
-using Discord.Commands;
+﻿using DSharpPlus;
+using DSharpPlus.CommandsNext;
+using DSharpPlus.CommandsNext.Attributes;
+using DSharpPlus.Entities;
 using MongoDB.Driver;
+using RoWifi_Alpha.Exceptions;
 using RoWifi_Alpha.Models;
 using RoWifi_Alpha.Utilities;
 using System.Collections.Generic;
@@ -10,26 +13,26 @@ using PremiumType = RoWifi_Alpha.Models.PremiumType;
 namespace RoWifi_Alpha.Commands
 {
     [Group("premium")]
-    [RequireBotPermission(ChannelPermission.EmbedLinks, ErrorMessage = "Looks like I'm missing the Embed Links Permission")]
-    [Summary("Module to access premium of servers")]
-    public class PremiumAdmin : ModuleBase<SocketCommandContext>
+    [RequireBotPermissions(Permissions.EmbedLinks)]
+    [Description("Module to access premium of servers")]
+    public class PremiumAdmin : BaseCommandModule
     {
         public DatabaseService Database { get; set; }
         public PatreonService Patreon { get; set; }
 
-        [Command("redeem"), RequireContext(ContextType.Guild)]
-        [Summary("Command to enable premium features of a server")]
-        public async Task<RuntimeResult> RedeemAsync()
+        [Command("redeem"), RequireGuild]
+        [Description("Command to enable premium features of a server")]
+        public async Task RedeemAsync(CommandContext Context)
         {
             Premium premium = await Database.GetPremium(Context.User.Id);
             if (premium == null)
             {
                 (string PatreonId, int? Tier) = await Patreon.GetPatron(Context.User.Id.ToString());
                 if (PatreonId == "None")
-                    return RoWifiResult.FromError("Patreon Linking Failed", "Patreon Account was not found for this Discord Account. Please make sure your Discord Account" +
+                    throw new CommandException("Patreon Linking Failed", "Patreon Account was not found for this Discord Account. Please make sure your Discord Account" +
                             " is linked to your Patreon Account");
                 if (Tier == null)
-                    return RoWifiResult.FromError("Patreon Linking Failed", "Must be a patron of Alpha or Beta Tier to redeem");
+                    throw new CommandException("Patreon Linking Failed", "Must be a patron of Alpha or Beta Tier to redeem");
                 if (Tier == 4014582)
                 {
                     premium = new Premium { DiscordId = Context.User.Id, PatreonId = ulong.Parse(PatreonId), DiscordServers = new List<ulong>(), PType = PremiumType.Alpha };
@@ -39,21 +42,21 @@ namespace RoWifi_Alpha.Commands
                     premium = new Premium { DiscordId = Context.User.Id, PatreonId = ulong.Parse(PatreonId), DiscordServers = new List<ulong>(), PType = PremiumType.Beta };
                 }
                 else
-                    return RoWifiResult.FromSuccess();
+                    return;
                 await Database.AddPremium(premium);
-                EmbedBuilder embed2 = Miscellanous.GetDefaultEmbed();
+                DiscordEmbedBuilder embed2 = Miscellanous.GetDefaultEmbed();
                 embed2.WithTitle("Patreon Linking Successful").WithDescription("Patreon Account was found for this account successfully");
-                await ReplyAsync(embed: embed2.Build());
+                await Context.RespondAsync(embed: embed2.Build());
             }
 
-            if (Context.Guild.OwnerId != Context.User.Id && Context.User.Id != 311395138133950465)
-                return RoWifiResult.FromError("Redeem Failed", "You must be the server owner to use this command");
+            if (!Context.Member.IsOwner && Context.User.Id != 311395138133950465)
+                throw new CommandException("Redeem Failed", "You must be the server owner to use this command");
             if (premium.PType == PremiumType.Alpha && premium.DiscordServers.Count > 0)
-                return RoWifiResult.FromError("Redeem Failed", "You may only redeem premium on one server");
+                throw new CommandException("Redeem Failed", "You may only redeem premium on one server");
 
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)
-                return RoWifiResult.FromError("Redeem Failed", "Server was not setup. Please ask the server owner to set up this server.");
+                throw new CommandException("Redeem Failed", "Server was not setup. Please ask the server owner to set up this server.");
 
             UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Set(g => g.Settings.AutoDetection, true).Set(g => g.Settings.Type, (GuildType)premium.PType);
             await Database.ModifyGuild(Context.Guild.Id, update);
@@ -62,25 +65,24 @@ namespace RoWifi_Alpha.Commands
             if (!premium.DiscordServers.Contains(Context.Guild.Id))
                 await Database.ModifyPremium(Context.User.Id, update2);
 
-            EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
+            DiscordEmbedBuilder embed = Miscellanous.GetDefaultEmbed();
             embed.WithTitle("Redeem Successful").WithDescription($"Added Premium features to {Context.Guild.Name}");
-            await ReplyAsync(embed: embed.Build());
-            return RoWifiResult.FromSuccess();
+            await Context.RespondAsync(embed: embed.Build());
         }
 
-        [Command("remove"), RequireContext(ContextType.Guild)]
-        [Summary("Command to revoke premium features from a server")]
-        public async Task<RuntimeResult> RemoveAsync()
+        [Command("remove"), RequireGuild]
+        [Description("Command to revoke premium features from a server")]
+        public async Task RemoveAsync(CommandContext Context)
         {
             Premium premium = await Database.GetPremium(Context.User.Id);
             if (premium == null)
-                return RoWifiResult.FromError("Premium Disable Failed", "You must be a premium member to use this command");
+                throw new CommandException("Premium Disable Failed", "You must be a premium member to use this command");
             if (!premium.DiscordServers.Contains(Context.Guild.Id))
-                return RoWifiResult.FromError("Premium Disable Failed", "This server either does not have premium enabled or the premium is owned by an another member");
+                throw new CommandException("Premium Disable Failed", "This server either does not have premium enabled or the premium is owned by an another member");
 
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)
-                return RoWifiResult.FromError("Premium Disable Failed", "Server was not setup. Please ask the server owner to set up this server.");
+                throw new CommandException("Premium Disable Failed", "Server was not setup. Please ask the server owner to set up this server.");
 
             UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Set(g => g.Settings.AutoDetection, false)
                                                     .Set(g => g.Settings.Type, GuildType.Normal)
@@ -88,10 +90,9 @@ namespace RoWifi_Alpha.Commands
             await Database.ModifyGuild(Context.Guild.Id, update);
             UpdateDefinition<Premium> update2 = Builders<Premium>.Update.Pull(u => u.DiscordServers, Context.Guild.Id);
             await Database.ModifyPremium(Context.User.Id, update2);
-            EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
+            DiscordEmbedBuilder embed = Miscellanous.GetDefaultEmbed();
             embed.WithTitle("Premium Disable Successful").WithDescription($"Removed premium features from {Context.Guild.Name}");
-            await ReplyAsync(embed: embed.Build());
-            return RoWifiResult.FromSuccess();
+            await Context.RespondAsync(embed: embed.Build());
         }
     }
 }

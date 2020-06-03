@@ -1,10 +1,12 @@
-﻿using Discord;
-using Discord.Commands;
-using Discord.WebSocket;
+﻿using DSharpPlus;
+using DSharpPlus.CommandsNext;
+using DSharpPlus.CommandsNext.Attributes;
+using DSharpPlus.Entities;
+using DSharpPlus.Interactivity;
 using MongoDB.Driver;
-using RoWifi_Alpha.Addons.Interactive;
+using RoWifi_Alpha.Attributes;
+using RoWifi_Alpha.Exceptions;
 using RoWifi_Alpha.Models;
-using RoWifi_Alpha.Preconditions;
 using RoWifi_Alpha.Services;
 using RoWifi_Alpha.Utilities;
 using System;
@@ -14,93 +16,94 @@ using System.Threading.Tasks;
 
 namespace RoWifi_Alpha.Commands
 {
-    [Group("custombinds"), Alias("cb")]
-    [RequireBotPermission(ChannelPermission.EmbedLinks, ErrorMessage = "Looks like I'm missing the Embed Links Permission")]
-    [Summary("Module to access custombinds of a server")]
-    public class Custombinds : InteractiveBase<SocketCommandContext>
+    [Group("custombinds"), Aliases("cb")]
+    [RequireBotPermissions(Permissions.EmbedLinks)]
+    [Description("Module to access custombinds of a server")]
+    public class Custombinds : BaseCommandModule
     {
         public DatabaseService Database { get; set; }
         public RobloxService Roblox { get; set; }
         public LoggerService Logger { get; set; }
 
-        [Command(RunMode = RunMode.Async), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-        [Summary("Command to view the custombinds of a server")]
-        public async Task<RuntimeResult> GroupCommand()
+        [GroupCommand, RequireGuild, RequireRoWifiAdmin]
+        [Description("Command to view the custombinds of a server")]
+        public async Task GroupCommand(CommandContext Context)
         {
+            var interactivity = Context.Client.GetInteractivity();
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)
-                return RoWifiResult.FromError("Bind Viewing Failed", "Server was not setup. Please ask the server owner to set up this server.");
+                throw new CommandException("Bind Viewing Failed", "Server was not setup. Please ask the server owner to set up this server.");
             if (guild.Settings.Type != GuildType.Beta)
-                return RoWifiResult.FromError("Bind Viewing Failed", "This module may only be used in Beta Tier Servers");
+                throw new CommandException("Bind Viewing Failed", "This module may only be used in Beta Tier Servers");
             if (guild.CustomBinds.Count == 0)
-                return RoWifiResult.FromError("Bind Viewing Failed", "There were no custombinds found associated with this server. Perhaps you meant to use `custombinds new`");
+                throw new CommandException("Bind Viewing Failed", "There were no custombinds found associated with this server. Perhaps you meant to use `custombinds new`");
             
-            List<EmbedBuilder> embeds = new List<EmbedBuilder>();
+            List<Page> pages = new List<Page>();
             var CustomBindsList = guild.CustomBinds.Select((x, i) => new { Index = i, Value = x }).GroupBy(x => x.Index / 12).Select(x => x.Select(v => v.Value).ToList());
             int Page = 1;
             foreach (List<CustomBind> CBS in CustomBindsList)
             {
-                EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
-                embed.WithTitle("Rankbinds").WithDescription($"Page - {Page}");
+                DiscordEmbedBuilder embed = Miscellanous.GetDefaultEmbed();
+                embed.WithTitle("Custombinds").WithDescription($"Page - {Page}");
                 foreach (CustomBind Bind in CBS)
                     embed.AddField($"Bind Id: {Bind.Id}", $"Code: {Bind.Code}\nPrefix: {Bind.Prefix}\nPriority: {Bind.Priority}\nRoles: {string.Concat(Bind.DiscordRoles.Select(r => $" <@&{ r}> "))}", true);
-                embeds.Add(embed);
+                pages.Add(new Page(embed: embed));
                 Page++;
             }
             if (Page == 2)
-                await ReplyAsync(embed: embeds[0].Build());
+                await Context.RespondAsync(embed: pages[0].Embed);
             else
-                await PagedReplyAsync(embeds);
-            return RoWifiResult.FromSuccess();
+                await interactivity.SendPaginatedMessageAsync(Context.Channel, Context.User, pages);
         }
 
-        [Command("new", RunMode = RunMode.Async), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-        [Summary("Command to add a new custombind to the server")]
-        public async Task<RuntimeResult> NewCustombindAsync([Remainder, Summary("The custom code to define the bind")]string Code)
+        [Command("new"), RequireGuild, RequireRoWifiAdmin]
+        [Description("Command to add a new custombind to the server")]
+        public async Task NewCustombindAsync(CommandContext Context, [RemainingText, Description("The custom code to define the bind")]string Code)
         {
+            var interactivity = Context.Client.GetInteractivity();
             RoUser user = await Database.GetUserAsync(Context.User.Id);
             if (user == null)
-                return RoWifiResult.FromError("Bind Addition Failed", "You must be verified to use this feature");
+                throw new CommandException("Bind Addition Failed", "You must be verified to use this feature");
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)
-                return RoWifiResult.FromError("Bind Addition Failed", "Server was not setup. Please ask the server owner to set up this server.");
+                throw new CommandException("Bind Addition Failed", "Server was not setup. Please ask the server owner to set up this server.");
             if (guild.Settings.Type != GuildType.Beta)
-                return RoWifiResult.FromError("Bind Addition Failed", "This module may only be used on Beta Tier servers");
+                throw new CommandException("Bind Addition Failed", "This module may only be used on Beta Tier servers");
             try
             {
                 RoCommand cmd = new RoCommand(Code);
                 Dictionary<int, int> Ranks = await Roblox.GetUserRoles(user.RobloxId);
                 string Username = await Roblox.GetUsernameFromId(user.RobloxId);
-                RoCommandUser CommandUser = new RoCommandUser(user, Context.User as IGuildUser, Ranks, Username);
+                RoCommandUser CommandUser = new RoCommandUser(user, Context.Member, Ranks, Username);
                 cmd.Evaluate(CommandUser);
             }
             catch (Exception e)
             {
-                return RoWifiResult.FromError("Bind Addition Failed", $"Command Error: {e.Message}");
+                throw new CommandException("Bind Addition Failed", $"Command Error: {e.Message}");
             }
 
-            await ReplyAsync("Enter Prefix to use in the nickname. Enter `N/A` if you do not wish to set a prefix.\nSay `cancel` if you wish to cancel this command");
-            SocketMessage response = await NextMessageAsync(new EnsureSourceUserCriterion());
-            if (response == null || response.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase))
-                return RoWifiResult.FromError("Bind Addition Failed", "Command has been cancelled");
-            string Prefix = response.Content;
+            await Context.RespondAsync("Enter Prefix to use in the nickname. Enter `N/A` if you do not wish to set a prefix.\nSay `cancel` if you wish to cancel this command");
+            var response = await interactivity.WaitForMessageAsync(xm => xm.Author.Id == Context.User.Id);
+            if (response.TimedOut || response.Result.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase))
+                throw new CommandException("Bind Addition Failed", "Command has been cancelled");
+            string Prefix = response.Result.Content;
 
-            await ReplyAsync("Enter the priority of this bind\nSay `cancel` if you wish to cancel this command");
-            response = await NextMessageAsync(new EnsureSourceUserCriterion());
-            if (response == null || response.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase))
-                return RoWifiResult.FromError("Bind Addition Failed", "Command has been cancelled");
-            bool Success = int.TryParse(response.Content, out int Priority);
+            await Context.RespondAsync("Enter the priority of this bind\nSay `cancel` if you wish to cancel this command");
+            response = await interactivity.WaitForMessageAsync(xm => xm.Author.Id == Context.User.Id);
+            if (response.TimedOut || response.Result.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase))
+                throw new CommandException("Bind Addition Failed", "Command has been cancelled");
+            bool Success = int.TryParse(response.Result.Content, out int Priority);
             if (!Success)
-                return RoWifiResult.FromError("Bind Addition Failed", "Priority was not found to be a valid number");
+                throw new CommandException("Bind Addition Failed", "Priority was not found to be a valid number");
 
-            await ReplyAsync("Ping the Discord Roles you wish to bind to this role. Enter `N/A` if you wish to not bind any role\nSay `cancel` if you wish to cancel this command");
-            response = await NextMessageAsync(new EnsureSourceUserCriterion());
-            if (response == null || response.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase))
-                return RoWifiResult.FromError("Bind Addition Failed", "Command has been cancelled");
-            SocketRole[] Roles = response.MentionedRoles.ToArray();
+            await Context.RespondAsync("Ping the Discord Roles you wish to bind to this role. Enter `N/A` if you wish to not bind any role\nSay `cancel` if you wish to cancel this command");
+            response = await interactivity.WaitForMessageAsync(xm => xm.Author.Id == Context.User.Id);
+            if (response.TimedOut || response.Result.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase))
+                throw new CommandException("Bind Addition Failed", "Command has been cancelled");
+            DiscordRole[] Roles = response.Result.MentionedRoles.ToArray();
 
             int Id = 1;
-            if (guild == null)
+            if (guild.CustomBinds != null && guild.CustomBinds.Count > 0)
                 Id = guild.CustomBinds.OrderBy(c => c.Id).Last().Id + 1;
             CustomBind Bind = new CustomBind(Id, Code, Prefix, Priority, Roles.Select(r => r.Id).ToArray());
             UpdateDefinition<RoGuild> update;
@@ -110,182 +113,186 @@ namespace RoWifi_Alpha.Commands
                 update = Builders<RoGuild>.Update.Push(g => g.CustomBinds, Bind);
             await Database.ModifyGuild(Context.Guild.Id, update);
 
-            EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
-            embed.WithColor(Color.Green).WithTitle("Bind Addition Successful")
+            DiscordEmbedBuilder embed = Miscellanous.GetDefaultEmbed();
+            embed.WithColor(DiscordColor.Green).WithTitle("Bind Addition Successful")
                 .AddField($"Bind Id: {Bind.Id}", $"Code: {Bind.Code}\nPrefix: {Bind.Prefix}\nPriority: {Bind.Priority}\nRoles: {string.Concat(Bind.DiscordRoles.Select(r => $" <@&{ r}> "))}", true);
-            await ReplyAsync(embed: embed.Build());
+            await Context.RespondAsync(embed: embed.Build());
             await Logger.LogAction(Context.Guild, Context.User, "Custom Bind Addition", $"Bind Id: {Bind.Id}", $"Code: {Bind.Code}\nPrefix: {Bind.Prefix}\nPriority: {Bind.Priority}\nRoles: {string.Concat(Bind.DiscordRoles.Select(r => $" <@&{ r}> "))}");
-            return RoWifiResult.FromSuccess();
         }
 
-        [Command("delete"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-        [Summary("Command to delete an existing custombind"), Alias("remove")]
-        public async Task<RuntimeResult> DeleteCustombindAsync([Summary("The Id of the assigned custombind")]int Id)
+        [Command("delete"), RequireGuild, RequireRoWifiAdmin]
+        [Description("Command to delete an existing custombind"), Aliases("remove")]
+        public async Task DeleteCustombindAsync(CommandContext Context, [Description("The Id of the assigned custombind")]int Id)
         {
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)
-                return RoWifiResult.FromError("Bind Deletion Failed", "Server was not setup. Please ask the server owner to set up this server.");
+                throw new CommandException("Bind Deletion Failed", "Server was not setup. Please ask the server owner to set up this server.");
             if (guild.Settings.Type != GuildType.Beta)
-                return RoWifiResult.FromError("Bind Deletion Failed", "This module may only be used on Beta Tier servers");
+                throw new CommandException("Bind Deletion Failed", "This module may only be used on Beta Tier servers");
             if (guild.CustomBinds == null || guild.CustomBinds.Count == 0)
-                return RoWifiResult.FromError("Bind Deletion Failed", "This server has no custombinds to delete");
+                throw new CommandException("Bind Deletion Failed", "This server has no custombinds to delete");
 
             CustomBind Bind = guild.CustomBinds.Where(c => c.Id == Id).FirstOrDefault();
             if (Bind == null)
-                return RoWifiResult.FromError("Bind Deletion Failed", $"A bind with {Id} as Id does not exist");
+                throw new CommandException("Bind Deletion Failed", $"A bind with {Id} as Id does not exist");
 
             UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Pull(g => g.CustomBinds, Bind);
             await Database.ModifyGuild(Context.Guild.Id, update);
 
-            EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
-            embed.WithColor(Color.Green).WithTitle("Bind Deletion Successful").WithDescription($"The bind with Id {Id} was successfully deleted");
-            await ReplyAsync(embed: embed.Build());
+            DiscordEmbedBuilder embed = Miscellanous.GetDefaultEmbed();
+            embed.WithColor(DiscordColor.Green).WithTitle("Bind Deletion Successful").WithDescription($"The bind with Id {Id} was successfully deleted");
+            await Context.RespondAsync(embed: embed.Build());
             await Logger.LogAction(Context.Guild, Context.User, "Custom Bind Deletion", $"Bind Id: {Bind.Id}", $"Code: {Bind.Code}\nPrefix: {Bind.Prefix}\nPriority: {Bind.Priority}\nRoles: {string.Concat(Bind.DiscordRoles.Select(r => $" <@&{ r}> "))}");
-            return RoWifiResult.FromSuccess();
         }
 
-        [Group("modify"), Alias("m")]
-        [Summary("Module to modify existing custombinds")]
-        public class ModifyCustombinds : ModuleBase<SocketCommandContext>
+        [Group("modify"), Aliases("m")]
+        [Description("Module to modify existing custombinds")]
+        public class ModifyCustombinds : BaseCommandModule
         {
             public DatabaseService Database { get; set; }
             public RobloxService Roblox { get; set; }
             public LoggerService Logger { get; set; }
 
-            [Command("prefix"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-            [Summary("Command to modify the prefix of a custombind")]
-            public async Task<RuntimeResult> ModifyPrefixAsync([Summary("The Id of the assigned custombind")]int Id, 
-                [Summary("The new prefix to be assigned")]string Prefix)
+            [GroupCommand, RequireGuild]
+            public async Task GroupCommand(CommandContext Context)
+            {
+                var commands = Context.CommandsNext;
+                var content = "help " + Context.Command.QualifiedName;
+                await Context.RespondAsync("Invalid Command Usage. Activating help...");
+                var cmd = commands.FindCommand(content, out var args);
+                var ctx = commands.CreateFakeContext(Context.User, Context.Channel, content, Context.Prefix, cmd, args);
+                await commands.ExecuteCommandAsync(ctx);
+            }
+
+            [Command("prefix"), RequireGuild, RequireRoWifiAdmin]
+            [Description("Command to modify the prefix of a custombind")]
+            public async Task ModifyPrefixAsync(CommandContext Context, [Description("The Id of the assigned custombind")]int Id, 
+                [Description("The new prefix to be assigned")]string Prefix)
             {
                 RoGuild guild = await Database.GetGuild(Context.Guild.Id);
                 if (guild == null)
-                    return RoWifiResult.FromError("Bind Modification Failed", "Server was not setup. Please ask the server owner to set up this server.");
+                    throw new CommandException("Bind Modification Failed", "Server was not setup. Please ask the server owner to set up this server.");
                 if (guild.Settings.Type != GuildType.Beta)
-                    return RoWifiResult.FromError("Bind Modification Failed", "This module may only be used on Beta Tier servers");
+                    throw new CommandException("Bind Modification Failed", "This module may only be used on Beta Tier servers");
                 CustomBind Bind = guild.CustomBinds.Where(c => c.Id == Id).FirstOrDefault();
                 if (Bind == null)
-                    return RoWifiResult.FromError("Bind Modification Failed", "A bind with the given Id does not exist");
+                    throw new CommandException("Bind Modification Failed", "A bind with the given Id does not exist");
 
                 FilterDefinition<RoGuild> filter = Builders<RoGuild>.Filter.Where(g => g.GuildId == Context.Guild.Id && g.CustomBinds.Any(r => r.Id == Id));
                 UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Set(r => r.CustomBinds[-1].Prefix, Prefix);
                 await Database.ModifyGuild(Context.Guild.Id, update, filter);
-                EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
-                embed.WithColor(Color.Green).WithTitle("Bind Modification Successful").WithDescription($"The prefix was successfully modified");
-                await ReplyAsync(embed: embed.Build());
-                await Logger.LogAction(Context.Guild, Context.User, "Custom Bind Modification - Prefix", $"Bind Id: {Bind.Id}", $"Old Prefix: {Bind.Prefix}\nNew Prefix: {Prefix}");
-                return RoWifiResult.FromSuccess();
+                DiscordEmbedBuilder embed = Miscellanous.GetDefaultEmbed();
+                embed.WithColor(DiscordColor.Green).WithTitle("Bind Modification Successful").WithDescription($"The prefix was successfully modified");
+                await Context.RespondAsync(embed: embed.Build());
+                await Logger.LogAction(Context.Guild, Context.User, "Custom Bind Modification - Prefix", $"Bind Id: {Bind.Id}", $"Old Prefix: {Bind.Prefix}\nNew Prefix: {Prefix}");;
             }
 
-            [Command("priority"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-            [Summary("Command to modify priority of a custombind")]
-            public async Task<RuntimeResult> ModifyPriorityAsync([Summary("The Id of the assigned custombind")] int Id, 
-                [Summary("The new priority to be assigned")]int Priority)
+            [Command("priority"), RequireGuild, RequireRoWifiAdmin]
+            [Description("Command to modify priority of a custombind")]
+            public async Task ModifyPriorityAsync(CommandContext Context, [Description("The Id of the assigned custombind")] int Id, 
+                [Description("The new priority to be assigned")]int Priority)
             {
                 RoGuild guild = await Database.GetGuild(Context.Guild.Id);
                 if (guild == null)
-                    return RoWifiResult.FromError("Bind Modification Failed", "Server was not setup. Please ask the server owner to set up this server.");
+                    throw new CommandException("Bind Modification Failed", "Server was not setup. Please ask the server owner to set up this server.");
                 if (guild.Settings.Type != GuildType.Beta)
-                    return RoWifiResult.FromError("Bind Modification Failed", "This module may only be used on Beta Tier servers");
+                    throw new CommandException("Bind Modification Failed", "This module may only be used on Beta Tier servers");
                 CustomBind Bind = guild.CustomBinds.Where(c => c.Id == Id).FirstOrDefault();
                 if (Bind == null)
-                    return RoWifiResult.FromError("Bind Modification Failed", "A bind with the given Id does not exist");
+                    throw new CommandException("Bind Modification Failed", "A bind with the given Id does not exist");
 
                 FilterDefinition<RoGuild> filter = Builders<RoGuild>.Filter.Where(g => g.GuildId == Context.Guild.Id && g.CustomBinds.Any(r => r.Id == Id));
                 UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Set(r => r.CustomBinds[-1].Priority, Priority);
                 await Database.ModifyGuild(Context.Guild.Id, update, filter);
-                EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
-                embed.WithColor(Color.Green).WithTitle("Bind Modification Successful").WithDescription($"The priority was successfully modified");
-                await ReplyAsync(embed: embed.Build());
+                DiscordEmbedBuilder embed = Miscellanous.GetDefaultEmbed();
+                embed.WithColor(DiscordColor.Green).WithTitle("Bind Modification Successful").WithDescription($"The priority was successfully modified");
+                await Context.RespondAsync(embed: embed.Build());
                 await Logger.LogAction(Context.Guild, Context.User, "Custom Bind Modification - Priority", $"Bind Id: {Bind.Id}", $"Old Priority: {Bind.Priority}\nNew Prefix: {Priority}");
-                return RoWifiResult.FromSuccess();
             }
 
-            [Command("code"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-            [Summary("Command to modify the code of a custombind")]
-            public async Task<RuntimeResult> ModifyCodeAsync([Summary("The Id of the assigned custombind")] int Id, 
-                [Remainder, Summary("The new custom code to be assigned")] string Code)
+            [Command("code"), RequireGuild, RequireRoWifiAdmin]
+            [Description("Command to modify the code of a custombind")]
+            public async Task ModifyCodeAsync(CommandContext Context, [Description("The Id of the assigned custombind")] int Id, 
+                [RemainingText, Description("The new custom code to be assigned")] string Code)
             {
                 RoGuild guild = await Database.GetGuild(Context.Guild.Id);
                 if (guild == null)
-                    return RoWifiResult.FromError("Bind Modification Failed", "Server was not setup. Please ask the server owner to set up this server.");
+                    throw new CommandException("Bind Modification Failed", "Server was not setup. Please ask the server owner to set up this server.");
                 if (guild.Settings.Type != GuildType.Beta)
-                    return RoWifiResult.FromError("Bind Modification Failed", "This module may only be used on Beta Tier servers");
+                    throw new CommandException("Bind Modification Failed", "This module may only be used on Beta Tier servers");
                 CustomBind bind = guild.CustomBinds.Where(c => c.Id == Id).FirstOrDefault();
                 if (bind == null)
-                    return RoWifiResult.FromError("Bind Modification Failed", "A bind with the given Id does not exist");
+                    throw new CommandException("Bind Modification Failed", "A bind with the given Id does not exist");
                 RoUser user = await Database.GetUserAsync(Context.User.Id);
                 if (user == null)
-                    return RoWifiResult.FromError("Bind Modification Failed", "You must be verified to use this feature");
+                    throw new CommandException("Bind Modification Failed", "You must be verified to use this feature");
 
                 try
                 {
                     RoCommand cmd = new RoCommand(Code);
                     Dictionary<int, int> Ranks = await Roblox.GetUserRoles(user.RobloxId);
                     string Username = await Roblox.GetUsernameFromId(user.RobloxId);
-                    RoCommandUser CommandUser = new RoCommandUser(user, Context.User as IGuildUser, Ranks, Username);
+                    RoCommandUser CommandUser = new RoCommandUser(user, Context.Member, Ranks, Username);
                     cmd.Evaluate(CommandUser);
                 }
                 catch (Exception e)
                 {
-                    return RoWifiResult.FromError("Bind Modification Failed", $"Command Error: {e.Message}");
+                    throw new CommandException("Bind Modification Failed", $"Command Error: {e.Message}");
                 }
 
                 FilterDefinition<RoGuild> filter = Builders<RoGuild>.Filter.Where(g => g.GuildId == Context.Guild.Id && g.CustomBinds.Any(r => r.Id == Id));
                 UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Set(r => r.CustomBinds[-1].Code, Code);
                 await Database.ModifyGuild(Context.Guild.Id, update, filter);
-                EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
-                embed.WithColor(Color.Green).WithTitle("Bind Modification Successful").WithDescription($"The code was successfully modified");
-                await ReplyAsync(embed: embed.Build());
+                DiscordEmbedBuilder embed = Miscellanous.GetDefaultEmbed();
+                embed.WithColor(DiscordColor.Green).WithTitle("Bind Modification Successful").WithDescription($"The code was successfully modified");
+                await Context.RespondAsync(embed: embed.Build());
                 await Logger.LogAction(Context.Guild, Context.User, "Custom Bind Modification - Code", $"Bind Id: {bind.Id}", $"Old Code: {bind.Code}\nNew Prefix: {Code}");
-                return RoWifiResult.FromSuccess();
             }
 
-            [Command("roles-add"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-            [Summary("Command to add roles to a custombind")]
-            public async Task<RuntimeResult> AddRolesAsync([Summary("The Id of the assigned custombind")] int Id, 
-                [Summary("The Roles to bind to the bind")]params IRole[] Roles)
+            [Command("roles-add"), RequireGuild, RequireRoWifiAdmin]
+            [Description("Command to add roles to a custombind")]
+            public async Task AddRolesAsync(CommandContext Context, [Description("The Id of the assigned custombind")] int Id, 
+                [Description("The Roles to bind to the bind")]params DiscordRole[] Roles)
             {
                 RoGuild guild = await Database.GetGuild(Context.Guild.Id);
                 if (guild == null)
-                    return RoWifiResult.FromError("Bind Modification Failed", "Server was not setup. Please ask the server owner to set up this server.");
+                    throw new CommandException("Bind Modification Failed", "Server was not setup. Please ask the server owner to set up this server.");
                 if (guild.Settings.Type != GuildType.Beta)
-                    return RoWifiResult.FromError("Bind Modification Failed", "This module may only be used on Beta Tier servers");
+                    throw new CommandException("Bind Modification Failed", "This module may only be used on Beta Tier servers");
                 CustomBind bind = guild.CustomBinds.Where(c => c.Id == Id).FirstOrDefault();
                 if (bind == null)
-                    return RoWifiResult.FromError("Bind Modification Failed", "A bind with the given Id does not exist");
+                    throw new CommandException("Bind Modification Failed", "A bind with the given Id does not exist");
 
                 FilterDefinition<RoGuild> filter = Builders<RoGuild>.Filter.Where(g => g.GuildId == Context.Guild.Id && g.CustomBinds.Any(r => r.Id == Id));
                 UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.PushEach(r => r.CustomBinds[-1].DiscordRoles, Roles.Select(r => r.Id));
                 await Database.ModifyGuild(Context.Guild.Id, update, filter);
-                EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
-                embed.WithColor(Color.Green).WithTitle("Bind Modification Successful").WithDescription($"The priority was successfully modified");
-                await ReplyAsync(embed: embed.Build());
+                DiscordEmbedBuilder embed = Miscellanous.GetDefaultEmbed();
+                embed.WithColor(DiscordColor.Green).WithTitle("Bind Modification Successful").WithDescription($"The new roles were successfully added");
+                await Context.RespondAsync(embed: embed.Build());
                 await Logger.LogAction(Context.Guild, Context.User, "Custom Bind Modification - Added Roles", $"Bind Id: {bind.Id}", $"Added Roles: {string.Concat(Roles.Select(r => $" <@&{ r}> "))}");
-                return RoWifiResult.FromSuccess();
             }
 
-            [Command("roles-remove"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-            [Summary("Command to remove binded roles from a custombind")]
-            public async Task<RuntimeResult> RemoveRolesAsync([Summary("The Id of the assigned custombind")] int Id, 
-                [Summary("The roles to remove from the bind")]params IRole[] Roles)
+            [Command("roles-remove"), RequireGuild, RequireRoWifiAdmin]
+            [Description("Command to remove binded roles from a custombind")]
+            public async Task RemoveRolesAsync(CommandContext Context, [Description("The Id of the assigned custombind")] int Id, 
+                [Description("The roles to remove from the bind")]params DiscordRole[] Roles)
             {
                 RoGuild guild = await Database.GetGuild(Context.Guild.Id);
                 if (guild == null)
-                    return RoWifiResult.FromError("Bind Modification Failed", "Server was not setup. Please ask the server owner to set up this server.");
+                    throw new CommandException("Bind Modification Failed", "Server was not setup. Please ask the server owner to set up this server.");
                 if (guild.Settings.Type != GuildType.Beta)
-                    return RoWifiResult.FromError("Bind Modification Failed", "This module may only be used on Beta Tier servers");
+                    throw new CommandException("Bind Modification Failed", "This module may only be used on Beta Tier servers");
                 CustomBind bind = guild.CustomBinds.Where(c => c.Id == Id).FirstOrDefault();
                 if (bind == null)
-                    return RoWifiResult.FromError("Bind Modification Failed", "A bind with the given Id does not exist");
+                    throw new CommandException("Bind Modification Failed", "A bind with the given Id does not exist");
 
                 FilterDefinition<RoGuild> filter = Builders<RoGuild>.Filter.Where(g => g.GuildId == Context.Guild.Id && g.CustomBinds.Any(r => r.Id == Id));
                 UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.PullAll(r => r.CustomBinds[-1].DiscordRoles, Roles.Select(r => r.Id));
                 await Database.ModifyGuild(Context.Guild.Id, update, filter);
-                EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
-                embed.WithColor(Color.Green).WithTitle("Bind Modification Successful").WithDescription($"The priority was successfully modified");
-                await ReplyAsync(embed: embed.Build());
+                DiscordEmbedBuilder embed = Miscellanous.GetDefaultEmbed();
+                embed.WithColor(DiscordColor.Green).WithTitle("Bind Modification Successful").WithDescription($"The given roles were successfully removed");
+                await Context.RespondAsync(embed: embed.Build());
                 await Logger.LogAction(Context.Guild, Context.User, "Custom Bind Modification - Added Roles", $"Bind Id: {bind.Id}", $"Removed Roles: {string.Concat(Roles.Select(r => $" <@&{ r}> "))}");
-                return RoWifiResult.FromSuccess();
             }
         }
     }

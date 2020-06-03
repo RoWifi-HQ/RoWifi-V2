@@ -67,18 +67,18 @@ namespace RoWifi_Alpha.Utilities.RoLang
         {
             if (oper.type == TokenType.HAS_RANK)
             {
-                bool Success = user.Ranks.TryGetValue((int)args[0].value, out int rank);
+                bool Success = user.Ranks.TryGetValue(Convert.ToInt32(args[0].value), out int rank);
                 if (!Success) return Flip ^ Success;
                 return Flip ^ (rank == (int)args[1].value);
             }
             else if(oper.type == TokenType.IS_IN_GROUP)
             {
-                bool Success = user.Ranks.ContainsKey((int)args[0].value);
+                bool Success = user.Ranks.ContainsKey(Convert.ToInt32(args[0].value));
                 return Flip ^ Success;
             }
             else if(oper.type == TokenType.HAS_ROLE)
             {
-                bool Success = user.Member.RoleIds.Contains((ulong)args[0].value);
+                bool Success = user.Member.Roles.Select(r => r.Id).Contains((ulong)args[0].value);
                 return Flip ^ Success;
             }
             else if(oper.type == TokenType.WITH_STRING)

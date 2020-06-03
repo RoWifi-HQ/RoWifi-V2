@@ -1,7 +1,5 @@
-﻿using Discord;
+﻿using DSharpPlus.Entities;
 using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace RoWifi_Alpha.Utilities
 {
@@ -17,12 +15,12 @@ namespace RoWifi_Alpha.Utilities
             return code1 + " " + code2 + " " + code3;
         }
 
-        public static EmbedBuilder GetDefaultEmbed()
+        public static DiscordEmbedBuilder GetDefaultEmbed()
         {
-            EmbedBuilder embed = new EmbedBuilder
+            DiscordEmbedBuilder embed = new DiscordEmbedBuilder
             {
                 Timestamp = DateTime.Now,
-                Color = Color.Blue,
+                Color = DiscordColor.Blue,
             };
             embed.WithFooter("RoWifi");
             return embed;

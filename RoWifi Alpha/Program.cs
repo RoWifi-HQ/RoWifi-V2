@@ -1,18 +1,18 @@
-﻿using Discord;
-using RoWifi_Alpha.Addons.Interactive;
-using Discord.WebSocket;
+﻿using Coravel;
+using DSharpPlus;
+using DSharpPlus.CommandsNext;
+using DSharpPlus.Interactivity;
+using DSharpPlus.Interactivity.Enums;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using RoWifi_Alpha.Commands;
 using RoWifi_Alpha.Services;
 using RoWifi_Alpha.Utilities;
 using System;
-using System.Net.Http;
-using System.Threading.Tasks;
-using Coravel;
-using Microsoft.Extensions.Hosting;
-using Discord.Addons.Hosting;
-using Discord.Addons.Hosting.Reliability;
-using Microsoft.Extensions.Logging;
 using System.Linq;
+using System.Threading.Tasks;
+using LogLevel = Microsoft.Extensions.Logging.LogLevel;
 
 namespace RoWifi_Alpha
 {
@@ -28,47 +28,64 @@ namespace RoWifi_Alpha
                 {
                     x.ClearProviders();
                     x.AddConsole();
-                    x.SetMinimumLevel(LogLevel.Warning);
+                    x.SetMinimumLevel(LogLevel.Debug);
                 })
-                .ConfigureDiscordHost<DiscordSocketClient>((context, config) =>
+                .ConfigureServices(services => 
                 {
-                    config.SetToken(Environment.GetEnvironmentVariable("DiscToken"));
-                    config.SetDiscordConfiguration(new DiscordSocketConfig
+                    var config = new DiscordConfiguration
                     {
-                        AlwaysDownloadUsers = true,
-                        LogLevel = LogSeverity.Info,
+                        Token = Environment.GetEnvironmentVariable("DiscToken"),
+                        TokenType = TokenType.Bot,
+                        AutoReconnect = true,
                         ShardId = int.Parse(Environment.GetEnvironmentVariable("SHARD").Split("-").LastOrDefault() ?? "0"),
-                        TotalShards = int.Parse(Environment.GetEnvironmentVariable("TOTAL_SHARDS")),
-                        ExclusiveBulkDelete = true
+                        ShardCount = int.Parse(Environment.GetEnvironmentVariable("TOTAL_SHARDS")),
+                        LogLevel = DSharpPlus.LogLevel.Debug,
+                        UseInternalLogHandler = true
+                    };
+                    services.AddSingleton(config);
+
+                    var Client = new DiscordClient(config);
+                    var deps = new ServiceCollection()
+                        .AddSingleton<DatabaseService>()
+                        .AddSingleton<LoggerService>()
+                        .AddHttpClient()
+                        .AddSingleton(Client)
+                        .AddMemoryCache();
+
+                    deps.AddHttpClient<RobloxService>();
+                    deps.AddHttpClient<PatreonService>();
+
+                    Client.UseCommandsNext(new CommandsNextConfiguration
+                    {
+                        CaseSensitive = false,
+                        DmHelp = false,
+                        EnableDefaultHelp = true,
+                        EnableDms = false,
+                        EnableMentionPrefix = true,
+                        UseDefaultCommandHandler = false,
+                        Services = deps.BuildServiceProvider()
                     });
-                })
-                .UseCommandService((context, config) =>
-                {
-                    config.LogLevel = LogSeverity.Info;
-                    config.CaseSensitiveCommands = false;
-                })
-                .ConfigureServices(services =>
-                {
-                    services.AddSingleton<CommandHandler>()
-                    .AddSingleton<IHostedService>(s => s.GetService<CommandHandler>())
-                    .AddSingleton<HttpClient>()
-                    .AddSingleton<InteractiveService>()
-                    .AddSingleton<DatabaseService>()
-                    .AddSingleton<LoggerService>()
-                    .AddSingleton<ActivityService>()
-                    .AddSingleton<AutoDetection>()
-                    .AddSingleton<Services.EventHandler>()
-                    .AddSingleton<IHostedService>(s => s.GetService<Services.EventHandler>());
+                    Client.UseInteractivity(new InteractivityConfiguration
+                    {
+                        Timeout = TimeSpan.FromMinutes(1),
+                        PaginationDeletion = PaginationDeletion.DeleteMessage
+                    });
+                    var Commands = Client.GetCommandsNext();
+                    Commands.RegisterCommands(typeof(UserAdmin).Assembly);
 
-                    services.AddHttpClient<RobloxService>();
-                    services.AddHttpClient<PatreonService>();
-                    services.AddMemoryCache();
-
-                    services.AddScheduler();
+                    services.AddSingleton(Client)
+                        .AddSingleton(Commands)
+                        .AddSingleton<LoggerService>()
+                        .AddSingleton<ActivityService>()
+                        .AddSingleton<AutoDetection>()
+                        .AddHostedService<Services.EventHandler>()
+                        .AddHostedService<DiscordBot>()
+                        .AddHostedService<CommandHandler>()
+                        .AddScheduler();
                 })
                 .UseConsoleLifetime();
 
-            IHost host = builder.Build();
+            var host = builder.Build();
 
             host.Services.UseScheduler(scheduler =>
             {
@@ -88,7 +105,7 @@ namespace RoWifi_Alpha
 
             using (host)
             {
-                await host.RunReliablyAsync();
+                await host.RunAsync();
             }
         }
     }

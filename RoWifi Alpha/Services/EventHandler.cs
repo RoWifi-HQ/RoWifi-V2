@@ -1,6 +1,9 @@
-﻿using Discord;
-using Discord.Addons.Hosting;
-using Discord.WebSocket;
+﻿using DSharpPlus;
+using DSharpPlus.CommandsNext;
+using DSharpPlus.Entities;
+using DSharpPlus.EventArgs;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using RoWifi_Alpha.Exceptions;
 using RoWifi_Alpha.Models;
 using RoWifi_Alpha.Utilities;
@@ -11,40 +14,40 @@ using System.Threading.Tasks;
 
 namespace RoWifi_Alpha.Services
 {
-    public class EventHandler : InitializedService
+    public class EventHandler : IHostedService
     {
-        private DiscordSocketClient Client;
+        private DiscordClient Client;
         private readonly LoggerService Logger;
         private readonly DatabaseService Database;
         private readonly RobloxService Roblox;
 
-        public EventHandler(IServiceProvider provider, DiscordSocketClient client, LoggerService logger, DatabaseService database, RobloxService roblox)
+        public EventHandler(DiscordClient client, CommandsNextExtension commands, LoggerService logger)
         {
             Client = client;
             Logger = logger;
-            Database = database;
-            Roblox = roblox;
+            Database = commands.Services.GetRequiredService<DatabaseService>();
+            Roblox = commands.Services.GetRequiredService<RobloxService>();
         }
 
-        public override Task InitializeAsync(CancellationToken cancellationToken)
+        public Task StartAsync(CancellationToken cancellationToken)
         {
-            Client.JoinedGuild += OnGuildJoin;
-            Client.LeftGuild += OnGuildLeave;
-            Client.UserJoined += OnMemberJoin;
+            Client.GuildCreated += OnGuildJoin;
+            Client.GuildDeleted += OnGuildLeave;
+            Client.GuildMemberAdded += OnMemberJoin;
             return Task.CompletedTask;
         }
 
-        private async Task OnMemberJoin(SocketGuildUser arg)
+        private async Task OnMemberJoin(GuildMemberAddEventArgs arg)
         {
             RoGuild guild = await Database.GetGuild(arg.Guild.Id);
             if (guild == null) return;
             if (!guild.Settings.UpdateOnJoin) return;
-            RoUser user = await Database.GetUserAsync(arg.Id);
+            RoUser user = await Database.GetUserAsync(arg.Member.Id);
             if (user == null) return;
-            EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
+            DiscordEmbedBuilder embed = Miscellanous.GetDefaultEmbed();
             try
             {
-                (List<ulong> AddedRoles, List<ulong> RemovedRoles, string DiscNick) = await user.UpdateAsync(Roblox, arg.Guild, guild, arg);
+                (List<ulong> AddedRoles, List<ulong> RemovedRoles, string DiscNick) = await user.UpdateAsync(Roblox, arg.Guild, guild, arg.Member);
                 string AddStr = "";
                 foreach (ulong item in AddedRoles)
                     AddStr += $"- <@&{item}>\n";
@@ -56,30 +59,29 @@ namespace RoWifi_Alpha.Services
                 RemoveStr = RemoveStr.Length == 0 ? "None" : RemoveStr;
                 DiscNick = DiscNick.Length == 0 ? "None" : DiscNick;
 
-                var fields = new List<EmbedFieldBuilder>()
-                {
-                    new EmbedFieldBuilder().WithName("Nickname").WithValue(DiscNick),
-                    new EmbedFieldBuilder().WithName("Added Roles").WithValue(AddStr),
-                    new EmbedFieldBuilder().WithName("Removed Roles").WithValue(RemoveStr)
-                };
-
-                embed.WithFields(fields).WithColor(Color.Green).WithTitle("Update");
+                embed.AddField("Nickname", DiscNick)
+                     .AddField("Added Roles", AddStr)
+                     .AddField("Removed Roles", RemoveStr)
+                     .WithColor(DiscordColor.Green)
+                     .WithTitle("Update");
                 await Logger.LogServer(arg.Guild, embed.Build());
             }
             catch (BlacklistException) { }
             catch (Exception) { }
         }
 
-        private async Task OnGuildLeave(SocketGuild arg)
+        private async Task OnGuildLeave(GuildDeleteEventArgs arg)
         {
-            string text = $"Left Guild - {arg.Name}";
+            string text = $"Left Guild - {arg.Guild.Name}";
             await Logger.LogEvent(text);
         }
 
-        private async Task OnGuildJoin(SocketGuild arg)
+        private async Task OnGuildJoin(GuildCreateEventArgs arg)
         {
-            string text = $"Joined Guild - {arg.Name}";
+            string text = $"Joined Guild - {arg.Guild.Name}";
             await Logger.LogEvent(text);
         }
+
+        public virtual Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
     }
 }

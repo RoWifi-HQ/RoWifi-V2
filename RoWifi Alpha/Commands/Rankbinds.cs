@@ -1,11 +1,13 @@
-﻿using Discord;
-using Discord.Commands;
-using Discord.WebSocket;
+﻿using DSharpPlus;
+using DSharpPlus.CommandsNext;
+using DSharpPlus.CommandsNext.Attributes;
+using DSharpPlus.Entities;
+using DSharpPlus.Interactivity;
 using MongoDB.Driver;
 using Newtonsoft.Json.Linq;
-using RoWifi_Alpha.Addons.Interactive;
+using RoWifi_Alpha.Attributes;
+using RoWifi_Alpha.Exceptions;
 using RoWifi_Alpha.Models;
-using RoWifi_Alpha.Preconditions;
 using RoWifi_Alpha.Services;
 using RoWifi_Alpha.Utilities;
 using System;
@@ -17,67 +19,67 @@ using System.Threading.Tasks;
 namespace RoWifi_Alpha.Commands
 {
     [Group("rankbinds")]
-    [Alias("rb")]
-    [RequireBotPermission(ChannelPermission.EmbedLinks, ErrorMessage = "Looks like I'm missing the Embed Links Permission")]
-    [Summary("Module to access rankbinds of a server")]
-    public class Rankbinds : InteractiveBase<SocketCommandContext>
+    [Aliases("rb")]
+    [RequireBotPermissions(Permissions.EmbedLinks)]
+    [Description("Module to access rankbinds of a server")]
+    public class Rankbinds : BaseCommandModule
     {
         public DatabaseService Database { get; set; }
         public RobloxService Roblox { get; set; }
         public LoggerService Logger { get; set; }
 
-        [Command(RunMode = RunMode.Async), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-        [Summary("Command to view rankbinds of a server")]
-        public async Task<RuntimeResult> GroupCommand()
+        [GroupCommand, RequireGuild, RequireRoWifiAdmin]
+        [Description("Command to view rankbinds of a server")]
+        public async Task GroupCommand(CommandContext Context)
         {
+            var interactivity = Context.Client.GetInteractivity();
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)
-                return RoWifiResult.FromError("Bind Viewing Failed", "Server was not setup. Please ask the server owner to set up this server.");
+                throw new CommandException("Bind Viewing Failed", "Server was not setup. Please ask the server owner to set up this server.");
             if (guild.RankBinds.Count == 0)
-                return RoWifiResult.FromError("Bind Viewing Failed", "There were no rankbinds found associated with this server. Perhaps you meant to use `rankbinds new`");
+                throw new CommandException("Bind Viewing Failed", "There were no rankbinds found associated with this server. Perhaps you meant to use `rankbinds new`");
             var UniqueGroups = guild.RankBinds.Select(r => r.GroupId).Distinct();
-            List<EmbedBuilder> embeds = new List<EmbedBuilder>();
+            List<Page> pages = new List<Page>();
             int Page = 1;
             foreach (int Group in UniqueGroups)
             {
                 var RankBinds = guild.RankBinds.Where(r => r.GroupId == Group).OrderBy(r => r.RbxRankId).Select((x, i) => new { Index = i, Value = x }).GroupBy(x => x.Index / 12).Select(x => x.Select(v => v.Value).ToList());
                 foreach (List<RankBind> RBS in RankBinds)
                 {
-                    EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
+                    DiscordEmbedBuilder embed = Miscellanous.GetDefaultEmbed();
                     embed.WithTitle("Rankbinds").WithDescription($"Group: {Group} - Page {Page}");
                     foreach (RankBind Bind in RBS)
                     {
                         embed.AddField($"Rank: {Bind.RbxRankId}", $"Prefix: {Bind.Prefix}\nPriority: {Bind.Priority}\nRoles: {string.Concat(Bind.DiscordRoles.Select(r => $" <@&{ r}> "))}", true);
                     }
-                    embeds.Add(embed);
+                    pages.Add(new Page(embed: embed));
                     Page++;
                 }
             }
             if (Page == 2)
-                await ReplyAsync(embed: embeds[0].Build());
+                await Context.RespondAsync(embed: pages[0].Embed);
             else
-                await PagedReplyAsync(embeds);
-            return RoWifiResult.FromSuccess();
+                await interactivity.SendPaginatedMessageAsync(Context.Channel, Context.User, pages);
         }
 
-        [Command("new"), RequireContext(ContextType.Guild), RequireRoWifiAdmin, Priority(4)]
-        [Summary("Command to add a new rankbind")]
-        public async Task<RuntimeResult> NewRankbindAsync([Summary("Id of the Group to bind")]int GroupId, 
-            [Summary("The Rank Id of the Group to bind [0-255]")]int RankId, 
-            [Summary("The prefix to be used before the nickname")]string Prefix, 
-            [Summary("The deciding factor for the prefix conflict between two roles")]int Priority, 
-            [Summary("The Discord Roles to be added to the bind")]params IRole[] Roles)
+        [Command("new"), RequireGuild, RequireRoWifiAdmin, Priority(4)]
+        [Description("Command to add a new rankbind")]
+        public async Task NewRankbindAsync(CommandContext Context, [Description("Id of the Group to bind")]int GroupId, 
+            [Description("The Rank Id of the Group to bind [0-255]")]int RankId, 
+            [Description("The prefix to be used before the nickname")]string Prefix, 
+            [Description("The deciding factor for the prefix conflict between two roles")]int Priority, 
+            [Description("The Discord Roles to be added to the bind")]params DiscordRole[] Roles)
         {
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)
-                return RoWifiResult.FromError("Bind Addition Failed", "Server was not setup. Please ask the server owner to set up this server.");
+                throw new CommandException("Bind Addition Failed", "Server was not setup. Please ask the server owner to set up this server.");
 
             if (guild.RankBinds.Exists(r => r.GroupId == GroupId && r.RbxRankId == RankId))
-                return RoWifiResult.FromError("Bind Addition Failed", "A bind with the given Group and Rank already exists. Please use `rankbinds modify` to modify rankbinds");
+                throw new CommandException("Bind Addition Failed", "A bind with the given Group and Rank already exists. Please use `rankbinds modify` to modify rankbinds");
 
             JToken RankInfo = await Roblox.GetGroupRank(GroupId, RankId);
             if (RankInfo == null)
-                return RoWifiResult.FromError("Bind Addition Failed", $"The Rank {RankId} does not exist in Group {GroupId}");
+                throw new CommandException("Bind Addition Failed", $"The Rank {RankId} does not exist in Group {GroupId}");
             if (Prefix.Equals("auto"))
             {
                 Prefix = Regex.Match((string)RankInfo["name"], @"\[(.*?)\]").Groups[1].Value;
@@ -87,217 +89,211 @@ namespace RoWifi_Alpha.Commands
             RankBind bind = new RankBind { GroupId = GroupId, RbxRankId = RankId, RbxGrpRoleId = (int)RankInfo["id"], Prefix = Prefix, Priority = Priority, DiscordRoles = Roles.Select(r => r.Id).ToArray() };
             UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Push(r => r.RankBinds, bind);
             await Database.ModifyGuild(Context.Guild.Id, update);
-            EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
-            embed.WithColor(Color.Green).WithTitle("Bind Addition Successful")
+            DiscordEmbedBuilder embed = Miscellanous.GetDefaultEmbed();
+            embed.WithColor(DiscordColor.Green).WithTitle("Bind Addition Successful")
                 .AddField($"Rank: {bind.RbxRankId}", $"Prefix: {bind.Prefix}\nPriority: {bind.Priority}\nRoles: {string.Concat(bind.DiscordRoles.Select(r => $" <@&{ r}> "))}", true);
-            await ReplyAsync(embed: embed.Build());
+            await Context.RespondAsync(embed: embed.Build());
             await Logger.LogAction(Context.Guild, Context.User, $"Rank Bind Addition - Group {bind.GroupId}", $"Rank Id: {bind.RbxRankId}", $"Prefix: {bind.Prefix}\nPriority: {bind.Priority}\nRoles: {string.Concat(bind.DiscordRoles.Select(r => $" <@&{ r}> "))}");
-            return RoWifiResult.FromSuccess();
         }
 
-        [Command("delete"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-        [Summary("Command to delete a rankbind"), Alias("remove")]
-        public async Task<RuntimeResult> DeleteAsync([Summary("Id of the Group")]int GroupId, 
-            [Summary("The Rank Id of the Group to delete")]int RankId)
+        [Command("delete"), RequireGuild, RequireRoWifiAdmin]
+        [Description("Command to delete a rankbind"), Aliases("remove")]
+        public async Task DeleteAsync(CommandContext Context, [Description("Id of the Group")]int GroupId, 
+            [Description("The Rank Id of the Group to delete")]int RankId)
         {
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)
-                return RoWifiResult.FromError("Bind Deletion Failed", "Server was not setup. Please ask the server owner to set up this server.");
+                throw new CommandException("Bind Deletion Failed", "Server was not setup. Please ask the server owner to set up this server.");
 
             RankBind bind = guild.RankBinds.Where(r => r.GroupId == GroupId && r.RbxRankId == RankId).FirstOrDefault();
             if (bind == null)
-                return RoWifiResult.FromError("Bind Deletion Failed", "A bind with the given Group and Rank does not exist");
+                throw new CommandException("Bind Deletion Failed", "A bind with the given Group and Rank does not exist");
 
             UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Pull(r => r.RankBinds, bind);
             await Database.ModifyGuild(Context.Guild.Id, update);
-            EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
-            embed.WithColor(Color.Green).WithTitle("Bind Deletion Successful").WithDescription($"The bind with Group Id {GroupId} & Rank Id {RankId} was successfully deleted");
-            await ReplyAsync(embed: embed.Build());
+            DiscordEmbedBuilder embed = Miscellanous.GetDefaultEmbed();
+            embed.WithColor(DiscordColor.Green).WithTitle("Bind Deletion Successful").WithDescription($"The bind with Group Id {GroupId} & Rank Id {RankId} was successfully deleted");
+            await Context.RespondAsync(embed: embed.Build());
             await Logger.LogAction(Context.Guild, Context.User, $"Rank Bind Deletion - Group {bind.GroupId}", $"Rank Id: {bind.RbxRankId}", $"Prefix: {bind.Prefix}\nPriority: {bind.Priority}\nRoles: {string.Concat(bind.DiscordRoles.Select(r => $" <@&{ r}> "))}");
-            return RoWifiResult.FromSuccess();
         }
 
         [Group("modify")]
-        [Summary("Module to modify rankbinds of the server")]
-        public class ModifyRankbinds : ModuleBase<SocketCommandContext>
+        [Description("Module to modify rankbinds of the server")]
+        public class ModifyRankbinds : BaseCommandModule
         {
             public DatabaseService Database { get; set; }
             public LoggerService Logger { get; set; }
 
-            [Command("prefix"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-            [Summary("Command to modify the prefix of a rankbind")]
-            public async Task<RuntimeResult> ModifyPrefixAsync([Summary("The Id of the Group")]int GroupId, 
-                [Summary("The Rank Id of the group to modify")]int RankId, 
-                [Summary("The new prefix of the bind")]string Prefix)
+            [Command("prefix"), RequireGuild, RequireRoWifiAdmin]
+            [Description("Command to modify the prefix of a rankbind")]
+            public async Task ModifyPrefixAsync(CommandContext Context, [Description("The Id of the Group")]int GroupId, 
+                [Description("The Rank Id of the group to modify")]int RankId, 
+                [Description("The new prefix of the bind")]string Prefix)
             {
                 RoGuild guild = await Database.GetGuild(Context.Guild.Id);
                 if (guild == null)
-                    return RoWifiResult.FromError("Bind Modification Failed", "Server was not setup. Please ask the server owner to set up this server.");
+                    throw new CommandException("Bind Modification Failed", "Server was not setup. Please ask the server owner to set up this server.");
 
                 RankBind bind = guild.RankBinds.Where(r => r.GroupId == GroupId && r.RbxRankId == RankId).FirstOrDefault();
                 if (bind == null)
-                    return RoWifiResult.FromError("Bind Modification Failed", "A bind with the given Group and Rank does not exist");
+                    throw new CommandException("Bind Modification Failed", "A bind with the given Group and Rank does not exist");
 
                 FilterDefinition<RoGuild> filter = Builders<RoGuild>.Filter.Where(g => g.GuildId == Context.Guild.Id && g.RankBinds.Any(r => r.GroupId == GroupId && r.RbxRankId == RankId));
                 UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Set(r => r.RankBinds[-1].Prefix, Prefix);
                 await Database.ModifyGuild(Context.Guild.Id, update, filter);
-                EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
-                embed.WithColor(Color.Green).WithTitle("Bind Modification Successful").WithDescription($"The prefix was successfully modified");
-                await ReplyAsync(embed: embed.Build());
+                DiscordEmbedBuilder embed = Miscellanous.GetDefaultEmbed();
+                embed.WithColor(DiscordColor.Green).WithTitle("Bind Modification Successful").WithDescription($"The prefix was successfully modified");
+                await Context.RespondAsync(embed: embed.Build());
                 await Logger.LogAction(Context.Guild, Context.User, "Rank Bind Modification - Prefix", $"Group Id: {bind.GroupId}", $"Rank Id: {bind.RbxRankId}\nOld Prefix: {bind.Prefix}\nNew Prefix: {Prefix}");
-                return RoWifiResult.FromSuccess();
             }
 
-            [Command("priority"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-            [Summary("Command to modify the priority of a rankbind")]
-            public async Task<RuntimeResult> ModifyPriorityAsync([Summary("The Id of the Group")]int GroupId,
-                [Summary("The Rank Id of the group to modify")]int RankId, 
-                [Summary("The new priority of the bind")]int Priority)
+            [Command("priority"), RequireGuild, RequireRoWifiAdmin]
+            [Description("Command to modify the priority of a rankbind")]
+            public async Task ModifyPriorityAsync(CommandContext Context, [Description("The Id of the Group")]int GroupId,
+                [Description("The Rank Id of the group to modify")]int RankId, 
+                [Description("The new priority of the bind")]int Priority)
             {
                 RoGuild guild = await Database.GetGuild(Context.Guild.Id);
                 if (guild == null)
-                    return RoWifiResult.FromError("Bind Modification Failed", "Server was not setup. Please ask the server owner to set up this server.");
+                    throw new CommandException("Bind Modification Failed", "Server was not setup. Please ask the server owner to set up this server.");
 
                 RankBind bind = guild.RankBinds.Where(r => r.GroupId == GroupId && r.RbxRankId == RankId).FirstOrDefault();
                 if (bind == null)
-                    return RoWifiResult.FromError("Bind Modification Failed", "A bind with the given Group and Rank does not exist");
+                    throw new CommandException("Bind Modification Failed", "A bind with the given Group and Rank does not exist");
 
                 FilterDefinition<RoGuild> filter = Builders<RoGuild>.Filter.Where(g => g.GuildId == Context.Guild.Id && g.RankBinds.Any(r => r.GroupId == GroupId && r.RbxRankId == RankId));
                 UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Set(r => r.RankBinds[-1].Priority, Priority);
                 await Database.ModifyGuild(Context.Guild.Id, update, filter);
-                EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
-                embed.WithColor(Color.Green).WithTitle("Bind Modification Successful").WithDescription($"The priority was successfully modified");
-                await ReplyAsync(embed: embed.Build());
+                DiscordEmbedBuilder embed = Miscellanous.GetDefaultEmbed();
+                embed.WithColor(DiscordColor.Green).WithTitle("Bind Modification Successful").WithDescription($"The priority was successfully modified");
+                await Context.RespondAsync(embed: embed.Build());
                 await Logger.LogAction(Context.Guild, Context.User, "Rank Bind Modification - Priority", $"Group Id: {bind.GroupId}", $"Rank Id: {bind.RbxRankId}\nOld Priority: {bind.Priority}\nNew Priority: {Priority}");
-                return RoWifiResult.FromSuccess();
             }
 
-            [Command("roles-add"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-            [Summary("Command to add roles to a bind")]
-            public async Task<RuntimeResult> ModifyRolesAddAsync([Summary("The Id of the Group")]int GroupId,
-                [Summary("The Rank Id of the group to modify")]int RankId, 
-                [Summary("The roles to be added to the bind")]params IRole[] Roles)
+            [Command("roles-add"), RequireGuild, RequireRoWifiAdmin]
+            [Description("Command to add roles to a bind")]
+            public async Task ModifyRolesAddAsync(CommandContext Context, [Description("The Id of the Group")]int GroupId,
+                [Description("The Rank Id of the group to modify")]int RankId, 
+                [Description("The roles to be added to the bind")]params DiscordRole[] Roles)
             {
                 RoGuild guild = await Database.GetGuild(Context.Guild.Id);
                 if (guild == null)
-                    return RoWifiResult.FromError("Bind Modification Failed", "Server was not setup. Please ask the server owner to set up this server.");
+                    throw new CommandException("Bind Modification Failed", "Server was not setup. Please ask the server owner to set up this server.");
 
                 RankBind bind = guild.RankBinds.Where(r => r.GroupId == GroupId && r.RbxRankId == RankId).FirstOrDefault();
                 if (bind == null)
-                    return RoWifiResult.FromError("Bind Modification Failed", "A bind with the given Group and Rank does not exist");
+                    throw new CommandException("Bind Modification Failed", "A bind with the given Group and Rank does not exist");
 
                 FilterDefinition<RoGuild> filter = Builders<RoGuild>.Filter.Where(g => g.GuildId == Context.Guild.Id && g.RankBinds.Any(r => r.GroupId == GroupId && r.RbxRankId == RankId));
                 UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.AddToSetEach(r => r.RankBinds[-1].DiscordRoles, Roles.Select(r => r.Id));
                 await Database.ModifyGuild(Context.Guild.Id, update, filter);
-                EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
-                embed.WithColor(Color.Green).WithTitle("Bind Modification Successful").WithDescription($"The new roles were successfully added");
-                await ReplyAsync(embed: embed.Build());
-                await Logger.LogAction(Context.Guild, Context.User, "Rank Bind Modification - Added Roles", $"Group Id: {bind.GroupId}", $"Rank Id: {bind.RbxRankId}\nAdded Roles: {string.Concat(Roles.Select(r => $" <@&{ r}> "))}");
-                return RoWifiResult.FromSuccess();
+                DiscordEmbedBuilder embed = Miscellanous.GetDefaultEmbed();
+                embed.WithColor(DiscordColor.Green).WithTitle("Bind Modification Successful").WithDescription($"The new roles were successfully added");
+                await Context.RespondAsync(embed: embed.Build());
+                await Logger.LogAction(Context.Guild, Context.User, "Rank Bind Modification - Added Roles", $"Group Id: {bind.GroupId}", $"Rank Id: {bind.RbxRankId}\nAdded Roles: {string.Concat(Roles.Select(r => $" <@&{r.Id}> "))}");
             }
 
-            [Command("roles-remove"), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-            [Summary("Command to remove roles from a rankbinds")]
-            public async Task<RuntimeResult> ModifyRolesRemoveAsync([Summary("The Id of the Group")]int GroupId,
-                [Summary("The Rank Id of the group to modify")]int RankId, 
-                [Summary("The roles to be removed from the group")]params IRole[] Roles)
+            [Command("roles-remove"), RequireGuild, RequireRoWifiAdmin]
+            [Description("Command to remove roles from a rankbinds")]
+            public async Task ModifyRolesRemoveAsync(CommandContext Context, [Description("The Id of the Group")]int GroupId,
+                [Description("The Rank Id of the group to modify")]int RankId, 
+                [Description("The roles to be removed from the group")]params DiscordRole[] Roles)
             {
                 RoGuild guild = await Database.GetGuild(Context.Guild.Id);
                 if (guild == null)
-                    return RoWifiResult.FromError("Bind Modification Failed", "Server was not setup. Please ask the server owner to set up this server.");
+                    throw new CommandException("Bind Modification Failed", "Server was not setup. Please ask the server owner to set up this server.");
 
                 RankBind bind = guild.RankBinds.Where(r => r.GroupId == GroupId && r.RbxRankId == RankId).FirstOrDefault();
                 if (bind == null)
-                    return RoWifiResult.FromError("Bind Modification Failed", "A bind with the given Group and Rank does not exist");
+                    throw new CommandException("Bind Modification Failed", "A bind with the given Group and Rank does not exist");
 
                 FilterDefinition<RoGuild> filter = Builders<RoGuild>.Filter.Where(g => g.GuildId == Context.Guild.Id && g.RankBinds.Any(r => r.GroupId == GroupId && r.RbxRankId == RankId));
                 UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.PullAll(r => r.RankBinds[-1].DiscordRoles, Roles.Select(r => r.Id));
                 await Database.ModifyGuild(Context.Guild.Id, update, filter);
-                EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
-                embed.WithColor(Color.Green).WithTitle("Bind Modification Successful").WithDescription($"The new roles were successfully added");
-                await ReplyAsync(embed: embed.Build());
-                await Logger.LogAction(Context.Guild, Context.User, "Rank Bind Modification - Removed Roles", $"Group Id: {bind.GroupId}", $"Rank Id: {bind.RbxRankId}\nRemoved Roles: {string.Concat(Roles.Select(r => $" <@&{ r}> "))}");
-                return RoWifiResult.FromSuccess();
+                DiscordEmbedBuilder embed = Miscellanous.GetDefaultEmbed();
+                embed.WithColor(DiscordColor.Green).WithTitle("Bind Modification Successful").WithDescription($"The given roles were successfully removed");
+                await Context.RespondAsync(embed: embed.Build());
+                await Logger.LogAction(Context.Guild, Context.User, "Rank Bind Modification - Removed Roles", $"Group Id: {bind.GroupId}", $"Rank Id: {bind.RbxRankId}\nRemoved Roles: {string.Concat(Roles.Select(r => $" <@&{r.Id}> "))}");
             }
         }
 
-        [Command("create", RunMode = RunMode.Async), RequireContext(ContextType.Guild), RequireRoWifiAdmin]
-        [Summary("Interactive Command to create a bind")]
-        public async Task<RuntimeResult> CreateRankbindAsync()
+        [Command("create"), RequireGuild, RequireRoWifiAdmin]
+        [Description("Interactive Command to create a bind")]
+        public async Task CreateRankbindAsync(CommandContext Context)
         {
+            var interactivity = Context.Client.GetInteractivity();
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)
-                return RoWifiResult.FromError("Bind Addition Failed", "Server was not setup. Please ask the server owner to set up this server.");
+                throw new CommandException("Bind Addition Failed", "Server was not setup. Please ask the server owner to set up this server.");
 
-            await ReplyAsync("Enter Group Id to bind\nSay `cancel` if you wish to cancel this command");
-            SocketMessage response = await NextMessageAsync(new EnsureSourceUserCriterion());
-            if (response == null || response.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase))
-                return RoWifiResult.FromError("Bind Addition Failed", "Command has been cancelled. Try again");
-            bool Success = int.TryParse(response.Content, out int GroupId);
+            await Context.RespondAsync("Enter Group Id to bind\nSay `cancel` if you wish to cancel this command");
+            var response = await interactivity.WaitForMessageAsync(xm => xm.Author.Id == Context.User.Id);
+            if (response.TimedOut || response.Result.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase))
+                throw new CommandException("Bind Addition Failed", "Command has been cancelled. Try again");
+            bool Success = int.TryParse(response.Result.Content, out int GroupId);
             if (!Success)
-                return RoWifiResult.FromError("Bind Addition Failed", "Group Id was not found to be a valid integer");
+                throw new CommandException("Bind Addition Failed", "Group Id was not found to be a valid integer");
 
-            await ReplyAsync("Enter Rank Id of the Group to bind\nSay `cancel` if you wish to cancel this command");
-            response = await NextMessageAsync(new EnsureSourceUserCriterion());
-            if (response == null || response.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase))
-                return RoWifiResult.FromError("Bind Addition Failed", "Command has been cancelled. Try again");
-            Success = int.TryParse(response.Content, out int RankId);
+            await Context.RespondAsync("Enter Rank Id of the Group to bind\nSay `cancel` if you wish to cancel this command");
+            response = await interactivity.WaitForMessageAsync(xm => xm.Author.Id == Context.User.Id);
+            if (response.TimedOut || response.Result.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase))
+                throw new CommandException("Bind Addition Failed", "Command has been cancelled. Try again");
+            Success = int.TryParse(response.Result.Content, out int RankId);
             if (!Success || RankId > 255 || RankId < 0)
-                return RoWifiResult.FromError("Bind Addition Failed", "Rank Id was not found to be a valid integer");
+                throw new CommandException("Bind Addition Failed", "Rank Id was not found to be a valid integer");
             JToken RankInfo = await Roblox.GetGroupRank(GroupId, RankId);
             if (RankInfo == null)
-                return RoWifiResult.FromError("Bind Addition Failed", $"The Rank {RankId} does not exist in Group {GroupId}");
+                throw new CommandException("Bind Addition Failed", $"The Rank {RankId} does not exist in Group {GroupId}");
 
-            await ReplyAsync("Enter Prefix to use in the nickname. Enter `N/A` if you do not wish to set a prefix.\nSay `cancel` if you wish to cancel this command");
-            response = await NextMessageAsync(new EnsureSourceUserCriterion());
-            if (response == null || response.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase))
-                return RoWifiResult.FromError("Bind Addition Failed", "Command has been cancelled. Try again");
-            string Prefix = response.Content;
+            await Context.RespondAsync("Enter Prefix to use in the nickname. Enter `N/A` if you do not wish to set a prefix.\nSay `cancel` if you wish to cancel this command");
+            response = await interactivity.WaitForMessageAsync(xm => xm.Author.Id == Context.User.Id);
+            if (response.TimedOut || response.Result.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase))
+                throw new CommandException("Bind Addition Failed", "Command has been cancelled. Try again");
+            string Prefix = response.Result.Content;
 
-            await ReplyAsync("Enter the priority of this bind\nSay `cancel` if you wish to cancel this command");
-            response = await NextMessageAsync(new EnsureSourceUserCriterion());
-            if (response == null || response.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase))
-                return RoWifiResult.FromError("Bind Addition Failed", "Command has been cancelled. Try again");
-            Success = int.TryParse(response.Content, out int Priority);
+            await Context.RespondAsync("Enter the priority of this bind\nSay `cancel` if you wish to cancel this command");
+            response = await interactivity.WaitForMessageAsync(xm => xm.Author.Id == Context.User.Id);
+            if (response.TimedOut || response.Result.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase))
+                throw new CommandException("Bind Addition Failed", "Command has been cancelled. Try again");
+            Success = int.TryParse(response.Result.Content, out int Priority);
             if (!Success)
-                return RoWifiResult.FromError("Bind Addition Failed", "Priority was not found to be a valid integer");
+                throw new CommandException("Bind Addition Failed", "Priority was not found to be a valid integer");
 
-            await ReplyAsync("Ping the Discord Roles you wish to bind to this role. Enter `N/A` if you wish to not bind any role\nSay `cancel` if you wish to cancel this command");
-            response = await NextMessageAsync(new EnsureSourceUserCriterion());
-            if (response == null || response.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase))
-                return RoWifiResult.FromError("Bind Addition Failed", "Command has been cancelled. Try again");
-            var Roles = response.MentionedRoles.ToArray();
+            await Context.RespondAsync("Ping the Discord Roles you wish to bind to this role. Enter `N/A` if you wish to not bind any role\nSay `cancel` if you wish to cancel this command");
+            response = await interactivity.WaitForMessageAsync(xm => xm.Author.Id == Context.User.Id);
+            if (response.TimedOut || response.Result.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase))
+                throw new CommandException("Bind Addition Failed", "Command has been cancelled. Try again");
+            var Roles = response.Result.MentionedRoles.ToArray();
 
             RankBind bind = new RankBind { GroupId = GroupId, RbxRankId = RankId, RbxGrpRoleId = (int)RankInfo["id"], Prefix = Prefix, Priority = Priority, DiscordRoles = Roles.Select(r => r.Id).ToArray() };
             UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Push(r => r.RankBinds, bind);
             await Database.ModifyGuild(Context.Guild.Id, update);
-            EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
-            embed.WithColor(Color.Green).WithTitle("Bind Addition Successful")
+            DiscordEmbedBuilder embed = Miscellanous.GetDefaultEmbed();
+            embed.WithColor(DiscordColor.Green).WithTitle("Bind Addition Successful")
                 .AddField($"Rank: {bind.RbxRankId}", $"Prefix: {bind.Prefix}\nPriority: {bind.Priority}\nRoles: {string.Concat(bind.DiscordRoles.Select(r => $" <@&{ r}> "))}", true);
-            await ReplyAsync(embed: embed.Build());
+            await Context.RespondAsync(embed: embed.Build());
             await Logger.LogAction(Context.Guild, Context.User, $"Rank Bind Addition - Group {bind.GroupId}", $"Rank Id: {bind.RbxRankId}", $"Prefix: {bind.Prefix}\nPriority: {bind.Priority}\nRoles: {string.Concat(bind.DiscordRoles.Select(r => $" <@&{ r}> "))}");
-            return RoWifiResult.FromSuccess();
         }
 
-        [Command("new"), RequireContext(ContextType.Guild), RequireRoWifiAdmin, Priority(3)]
-        [RequireBotPermission(ChannelPermission.ManageRoles)]
-        public async Task<RuntimeResult> NewRankbindWithAuto(int GroupId, int RankId, string Prefix, int Priority, string Roles)
+        [Command("new"), RequireGuild, RequireRoWifiAdmin, Priority(3)]
+        [RequireBotPermissions(Permissions.ManageRoles)]
+        public async Task NewRankbindWithAuto(CommandContext Context, int GroupId, int RankId, string Prefix, int Priority, string Roles)
         {
             if (!Roles.Equals("auto"))
-                return RoWifiResult.FromError("Bind Addition Failed", "Invalid choice for Roles. Please try again");
+                throw new CommandException("Bind Addition Failed", "Invalid choice for Roles. Please try again");
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)
-                return RoWifiResult.FromError("Bind Addition Failed", "Server was not setup. Please ask the server owner to set up this server.");
+                throw new CommandException("Bind Addition Failed", "Server was not setup. Please ask the server owner to set up this server.");
 
             if (guild.RankBinds.Exists(r => r.GroupId == GroupId && r.RbxRankId == RankId))
-                return RoWifiResult.FromError("Bind Addition Failed", "A bind with the given Group and Rank already exists. Please use `rankbinds modify` to modify rankbinds");
+                throw new CommandException("Bind Addition Failed", "A bind with the given Group and Rank already exists. Please use `rankbinds modify` to modify rankbinds");
 
             JToken RankInfo = await Roblox.GetGroupRank(GroupId, RankId);
             if (RankInfo == null)
-                return RoWifiResult.FromError("Bind Addition Failed", $"The Rank {RankId} does not exist in Group {GroupId}");
-            IRole Role = Context.Guild.Roles.Where(r => r.Name == RankInfo["name"].ToString()).FirstOrDefault();
+                throw new CommandException("Bind Addition Failed", $"The Rank {RankId} does not exist in Group {GroupId}");
+            DiscordRole Role = Context.Guild.Roles.Values.Where(r => r.Name == RankInfo["name"].ToString()).FirstOrDefault();
             if (Role == null) 
-                Role = await Context.Guild.CreateRoleAsync(RankInfo["name"].ToString(), isMentionable: false);
+                Role = await Context.Guild.CreateRoleAsync(RankInfo["name"].ToString(), mentionable: false);
             if (Prefix.Equals("auto"))
             {
                 Prefix = Regex.Match((string)RankInfo["name"], @"\[(.*?)\]").Groups[1].Value;
@@ -307,28 +303,27 @@ namespace RoWifi_Alpha.Commands
             RankBind bind = new RankBind { GroupId = GroupId, RbxRankId = RankId, RbxGrpRoleId = (int)RankInfo["id"], Prefix = Prefix, Priority = Priority, DiscordRoles = new ulong[] {Role.Id} };
             UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Push(r => r.RankBinds, bind);
             await Database.ModifyGuild(Context.Guild.Id, update);
-            EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
-            embed.WithColor(Color.Green).WithTitle("Bind Addition Successful")
+            DiscordEmbedBuilder embed = Miscellanous.GetDefaultEmbed();
+            embed.WithColor(DiscordColor.Green).WithTitle("Bind Addition Successful")
                 .AddField($"Rank: {bind.RbxRankId}", $"Prefix: {bind.Prefix}\nPriority: {bind.Priority}\nRoles: {string.Concat(bind.DiscordRoles.Select(r => $" <@&{ r}> "))}", true);
-            await ReplyAsync(embed: embed.Build());
+            await Context.RespondAsync(embed: embed.Build());
             await Logger.LogAction(Context.Guild, Context.User, $"Rank Bind Addition - Group {bind.GroupId}", $"Rank Id: {bind.RbxRankId}", $"Prefix: {bind.Prefix}\nPriority: {bind.Priority}\nRoles: {string.Concat(bind.DiscordRoles.Select(r => $" <@&{ r}> "))}");
-            return RoWifiResult.FromSuccess();
         }
 
-        [Command("new"), RequireContext(ContextType.Guild), RequireRoWifiAdmin, Priority(2)]
-        public async Task<RuntimeResult> MultipleRankbinds(int GroupId, string RankId, string Prefix, int Priority, params IRole[] Roles)
+        [Command("new"), RequireGuild, RequireRoWifiAdmin, Priority(2)]
+        public async Task MultipleRankbinds(CommandContext Context, int GroupId, string RankId, string Prefix, int Priority, params DiscordRole[] Roles)
         {
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)
-                return RoWifiResult.FromError("Bind Addition Failed", "Server was not setup. Please ask the server owner to set up this server.");
+                throw new CommandException("Bind Addition Failed", "Server was not setup. Please ask the server owner to set up this server.");
 
             var Ranks = RankId.Split('-');
             if (Ranks.Length != 2)
-                return RoWifiResult.FromError("Bind Addition Failed", "Invalid Rank Id Range");
+                throw new CommandException("Bind Addition Failed", "Invalid Rank Id Range");
             bool Success = int.TryParse(Ranks[0], out int MinRank);
             Success = int.TryParse(Ranks[1], out int MaxRank);
             if (!Success)
-                return RoWifiResult.FromError("Bind Addition Failed", "Unable to find Rank Id Range");
+                throw new CommandException("Bind Addition Failed", "Unable to find Rank Id Range");
 
             List<JToken> TokensToAdd = await Roblox.GetGroupRolesInRange(GroupId, MinRank, MaxRank);
             foreach(JToken RankInfo in TokensToAdd)
@@ -344,11 +339,11 @@ namespace RoWifi_Alpha.Commands
                     guild.RankBinds.Add(new RankBind { GroupId = GroupId, RbxRankId = (int)RankInfo["rank"], RbxGrpRoleId = (int)RankInfo["id"], Prefix = PrefixToAdd, Priority = Priority, DiscordRoles = Roles.Select(r => r.Id).ToArray() });
                 else
                 {
-                    if (bind.Prefix != Prefix)
-                        bind.Prefix = Prefix;
+                    if (bind.Prefix != PrefixToAdd)
+                        bind.Prefix = PrefixToAdd;
                     if (bind.Priority != Priority)
                         bind.Priority = Priority;
-                    foreach (IRole role in Roles)
+                    foreach (DiscordRole role in Roles)
                         if (!bind.DiscordRoles.Contains(role.Id))
                             bind.DiscordRoles.Append(role.Id);
                     int Index = guild.RankBinds.IndexOf(bind);
@@ -356,29 +351,28 @@ namespace RoWifi_Alpha.Commands
                 }
             }
             await Database.AddGuild(guild, false);
-            EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
-            embed.WithColor(Color.Green).WithTitle("Binds Addition Successful").WithDescription($"The new binds were successfully added");
-            await ReplyAsync(embed: embed.Build());
-            return RoWifiResult.FromSuccess();
+            DiscordEmbedBuilder embed = Miscellanous.GetDefaultEmbed();
+            embed.WithColor(DiscordColor.Green).WithTitle("Binds Addition Successful").WithDescription($"The new binds were successfully added");
+            await Context.RespondAsync(embed: embed.Build());
         }
 
-        [Command("new"), RequireContext(ContextType.Guild), RequireRoWifiAdmin, Priority(1)]
-        [RequireBotPermission(ChannelPermission.ManageRoles)]
-        public async Task<RuntimeResult> MultipleRankbindsWithAuto(int GroupId, string RankId, string Prefix, int Priority, string Roles)
+        [Command("new"), RequireGuild, RequireRoWifiAdmin, Priority(1)]
+        [RequireBotPermissions(Permissions.ManageRoles)]
+        public async Task MultipleRankbindsWithAuto(CommandContext Context, int GroupId, string RankId, string Prefix, int Priority, string Roles)
         {
             if (!Roles.Equals("auto"))
-                return RoWifiResult.FromError("Bind Addition Failed", "Invalid choice for Roles. Please try again");
+                throw new CommandException("Bind Addition Failed", "Invalid choice for Roles. Please try again");
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)
-                return RoWifiResult.FromError("Bind Addition Failed", "Server was not setup. Please ask the server owner to set up this server.");
+                throw new CommandException("Bind Addition Failed", "Server was not setup. Please ask the server owner to set up this server.");
 
             var Ranks = RankId.Split('-');
             if (Ranks.Length != 2)
-                return RoWifiResult.FromError("Bind Addition Failed", "Invalid Rank Id Range");
+                throw new CommandException("Bind Addition Failed", "Invalid Rank Id Range");
             bool Success = int.TryParse(Ranks[0], out int MinRank);
             Success = int.TryParse(Ranks[1], out int MaxRank);
             if (!Success)
-                return RoWifiResult.FromError("Bind Addition Failed", "Unable to find Rank Id Range");
+                throw new CommandException("Bind Addition Failed", "Unable to find Rank Id Range");
 
             List<JToken> TokensToAdd = await Roblox.GetGroupRolesInRange(GroupId, MinRank, MaxRank);
             foreach (JToken RankInfo in TokensToAdd)
@@ -391,11 +385,11 @@ namespace RoWifi_Alpha.Commands
                     PrefixToAdd = PrefixToAdd.Length == 0 ? "N/A" : $"[{PrefixToAdd}]";
                 }
                 string RoleName = RankInfo["name"].ToString().Trim();
-                IRole RoleToAdd = Context.Guild.Roles.Where(r => r.Name.Equals(RoleName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
+                DiscordRole RoleToAdd = Context.Guild.Roles.Values.Where(r => r.Name.Equals(RoleName, StringComparison.OrdinalIgnoreCase)).FirstOrDefault();
                 Console.WriteLine(RankInfo["name"]);
                 Console.WriteLine(RoleToAdd?.Id);
                 if (RoleToAdd == null)
-                    RoleToAdd = await Context.Guild.CreateRoleAsync(RoleName, isMentionable: false);
+                    RoleToAdd = await Context.Guild.CreateRoleAsync(RoleName, mentionable: false);
                 if (bind == null)
                     guild.RankBinds.Add(new RankBind { GroupId = GroupId, RbxRankId = (int)RankInfo["rank"], RbxGrpRoleId = (int)RankInfo["id"], Prefix = PrefixToAdd, Priority = Priority, DiscordRoles = new ulong[] { RoleToAdd.Id } });
                 else
@@ -411,10 +405,9 @@ namespace RoWifi_Alpha.Commands
                 }
             }
             await Database.AddGuild(guild, false);
-            EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
-            embed.WithColor(Color.Green).WithTitle("Binds Addition Successful").WithDescription($"The new binds were successfully added");
-            await ReplyAsync(embed: embed.Build());
-            return RoWifiResult.FromSuccess();
+            DiscordEmbedBuilder embed = Miscellanous.GetDefaultEmbed();
+            embed.WithColor(DiscordColor.Green).WithTitle("Binds Addition Successful").WithDescription($"The new binds were successfully added");
+            await Context.RespondAsync(embed: embed.Build());
         }
     }
 }

@@ -4,7 +4,7 @@ WORKDIR /app
 
 # copy csproj and restore as distinct layers
 COPY *.csproj .
-RUN dotnet restore -s https://www.myget.org/F/discord-net/api/v3/index.json -s https://api.nuget.org/v3/index.json
+RUN dotnet restore -s https://nuget.emzi0767.com/api/v3/index.json -s https://api.nuget.org/v3/index.json
 
 # copy and publish app and libraries
 COPY . ./

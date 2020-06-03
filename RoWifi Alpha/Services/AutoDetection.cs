@@ -1,6 +1,8 @@
 ﻿using Coravel.Invocable;
-using Discord;
-using Discord.WebSocket;
+using DSharpPlus;
+using DSharpPlus.CommandsNext;
+using DSharpPlus.Entities;
+using Microsoft.Extensions.DependencyInjection;
 using RoWifi_Alpha.Models;
 using RoWifi_Alpha.Utilities;
 using System;
@@ -14,40 +16,39 @@ namespace RoWifi_Alpha.Services
     public class AutoDetection : IInvocable
     {
         private readonly DatabaseService Database;
-        private readonly DiscordSocketClient Client;
+        private readonly DiscordClient Client;
         private readonly RobloxService Roblox;
         private readonly LoggerService Logger;
 
-        public AutoDetection(IServiceProvider provider, DatabaseService database, RobloxService roblox, DiscordSocketClient client, LoggerService logger)
+        public AutoDetection(DiscordClient client, CommandsNextExtension commands, LoggerService logger)
         {
-            Database = database;
+            Database = commands.Services.GetRequiredService<DatabaseService>();
             Client = client;
-            Roblox = roblox;
+            Roblox = commands.Services.GetRequiredService<RobloxService>();
             Logger = logger;
         }
 
         public async Task Invoke()
         {
-            if (Client.ConnectionState == ConnectionState.Disconnected) return;
             Stopwatch watch = new Stopwatch();
 
-            var PremiumGuilds = await Database.GetGuilds(Client.Guilds.Select(g => g.Id), true);
+            var PremiumGuilds = await Database.GetGuilds(Client.Guilds.Select(g => g.Key), true);
             foreach (RoGuild guild in PremiumGuilds)
             {
-                IGuild server = Client.GetGuild(guild.GuildId);
+                DiscordGuild server = await Client.GetGuildAsync(guild.GuildId);
                 Console.WriteLine("Starting detection on " + server.Name);
                 watch.Start();
 
-                Dictionary<ulong, IGuildUser> AllDiscordUsers = (await server.GetUsersAsync()).ToDictionary(x => x.Id, x => x);
+                Dictionary<ulong, DiscordMember> AllDiscordUsers = (await server.GetAllMembersAsync()).ToDictionary(x => x.Id, x => x);
                 IEnumerable<RoUser> VerifiedUsers = await Database.GetUsersAsync(AllDiscordUsers.Keys);
-                var BypassRoleId = server.Roles.Where(r => r != null).Where(r => r.Name == "RoWifi Bypass").FirstOrDefault()?.Id ?? 0;
+                var BypassRoleId = server.Roles.Values.Where(r => r != null).Where(r => r.Name == "RoWifi Bypass").FirstOrDefault()?.Id ?? 0;
                 foreach (RoUser user in VerifiedUsers)
                 {
                     try
                     {
-                        if (AllDiscordUsers[user.DiscordId].RoleIds.Contains(BypassRoleId)) continue;
+                        if (AllDiscordUsers[user.DiscordId].Roles.Where(r => r != null).Any(r => r.Name == "RoWifi Bypass")) continue;
                         (List<ulong> AddedRoles, List<ulong> RemovedRoles, string DiscNick) = await user.UpdateAsync(Roblox, server, guild,
-                            AllDiscordUsers[user.DiscordId], "Auto Detection");
+                        AllDiscordUsers[user.DiscordId], "Auto Detection");
 
                         if (AddedRoles.Count > 0 || RemovedRoles.Count > 0)
                         {
@@ -62,7 +63,7 @@ namespace RoWifi_Alpha.Services
                             RemoveStr = RemoveStr.Length == 0 ? "None" : RemoveStr;
                             DiscNick = DiscNick.Length == 0 ? "None" : DiscNick;
 
-                            EmbedBuilder embed = Miscellanous.GetDefaultEmbed();
+                            DiscordEmbedBuilder embed = Miscellanous.GetDefaultEmbed();
                             embed.WithTitle($"Auto Detection [{AllDiscordUsers[user.DiscordId].Nickname}]")
                                 .AddField("Nickname", DiscNick)
                                 .AddField("Added Roles", AddStr)
