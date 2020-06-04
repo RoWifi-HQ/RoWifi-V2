@@ -43,7 +43,7 @@ namespace RoWifi_Alpha.Commands
         {
             DiscordEmbedBuilder embed = Miscellanous.GetDefaultEmbed();
             embed.AddField("Name", Context.Client.CurrentUser.Username + "#" + Context.Client.CurrentUser.Discriminator, true)
-                .AddField("Version", "2.2.0", true)
+                .AddField("Version", "2.2.1", true)
                 .AddField("Language", "C#", true)
                 .AddField("Shards", Environment.GetEnvironmentVariable("TOTAL_SHARDS"), true)
                 .AddField("Shard Id", Context.Client.ShardId.ToString(), true)

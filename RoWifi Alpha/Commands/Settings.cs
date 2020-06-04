@@ -20,7 +20,6 @@ namespace RoWifi_Alpha.Commands
     public class Settings : BaseCommandModule
     {
         public DatabaseService Database { get; set; }
-        public CommandHandler Handler { get; set; }
         public LoggerService Logger { get; set; }
 
         [GroupCommand, RequireGuild, RequireRoWifiAdmin]
@@ -206,7 +205,7 @@ namespace RoWifi_Alpha.Commands
 
             UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Set(g => g.CommandPrefix, Prefix);
             await Database.ModifyGuild(Context.Guild.Id, update);
-            Handler.SetPrefix(Context.Guild.Id, Prefix); 
+            CommandHandler.SetPrefix(Context.Guild.Id, Prefix); 
 
             DiscordEmbedBuilder embed = Miscellanous.GetDefaultEmbed();
             embed.WithColor(DiscordColor.Green).WithTitle("Settings Modification Successful").WithDescription($"The prefix was successfully changed to {Prefix}");

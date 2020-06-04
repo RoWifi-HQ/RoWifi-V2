@@ -39,10 +39,13 @@ namespace RoWifi_Alpha.Utilities
                 {
                     IAsyncCursor<RoUser> cursor = await _users.FindAsync(u => u.DiscordId == DiscordId);
                     user = cursor.FirstOrDefault();
-                    var cacheOptions = new MemoryCacheEntryOptions()
-                        .SetSlidingExpiration(TimeSpan.FromMinutes(10))
-                        .SetAbsoluteExpiration(TimeSpan.FromMinutes(60));
-                    _cache.Set(DiscordId, user, cacheOptions);
+                    if (user != null)
+                    {
+                        var cacheOptions = new MemoryCacheEntryOptions()
+                            .SetSlidingExpiration(TimeSpan.FromMinutes(10))
+                            .SetAbsoluteExpiration(TimeSpan.FromMinutes(60));
+                        _cache.Set(DiscordId, user, cacheOptions);
+                    }
                 }
                 return user;
             }

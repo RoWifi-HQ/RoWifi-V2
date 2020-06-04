@@ -69,7 +69,7 @@ namespace RoWifi_Alpha.Utilities.RoLang
             {
                 bool Success = user.Ranks.TryGetValue(Convert.ToInt32(args[0].value), out int rank);
                 if (!Success) return Flip ^ Success;
-                return Flip ^ (rank == (int)args[1].value);
+                return Flip ^ (rank == Convert.ToInt32(args[1].value));
             }
             else if(oper.type == TokenType.IS_IN_GROUP)
             {

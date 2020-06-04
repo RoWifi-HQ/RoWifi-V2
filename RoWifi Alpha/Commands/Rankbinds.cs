@@ -124,6 +124,16 @@ namespace RoWifi_Alpha.Commands
             public DatabaseService Database { get; set; }
             public LoggerService Logger { get; set; }
 
+            [GroupCommand, RequireGuild]
+            public async Task GroupCommand(CommandContext Context)
+            {
+                var commands = Context.CommandsNext;
+                var content = "help " + Context.Command.QualifiedName;
+                var cmd = commands.FindCommand(content, out var args);
+                var ctx = commands.CreateFakeContext(Context.User, Context.Channel, content, Context.Prefix, cmd, args);
+                await commands.ExecuteCommandAsync(ctx);
+            }
+
             [Command("prefix"), RequireGuild, RequireRoWifiAdmin]
             [Description("Command to modify the prefix of a rankbind")]
             public async Task ModifyPrefixAsync(CommandContext Context, [Description("The Id of the Group")]int GroupId, 
