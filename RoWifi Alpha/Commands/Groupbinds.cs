@@ -109,7 +109,6 @@ namespace RoWifi_Alpha.Commands
             {
                 var commands = Context.CommandsNext;
                 var content = "help " + Context.Command.QualifiedName;
-                await Context.RespondAsync("Invalid Command Usage. Activating help...");
                 var cmd = commands.FindCommand(content, out var args);
                 var ctx = commands.CreateFakeContext(Context.User, Context.Channel, content, Context.Prefix, cmd, args);
                 await commands.ExecuteCommandAsync(ctx);

@@ -88,13 +88,13 @@ namespace RoWifi_Alpha.Models
 
             (List<ulong> AddedRoles, List<ulong> RemovedRoles) = await UpdateBindRolesAsync(member, server, guild, RankBindsToAdd, GroupBindsToAdd, CustomBindsToAdd, reason);
             string DiscNick = member.Nickname ?? member.Username;
-            if (!member.Roles.Where(r => r != null).Any(r => r.Name == "RoWifi Nickname Bypass"))
+            if (!member.Roles.ToList().Where(r => r != null).Any(r => r.Name == "RoWifi Nickname Bypass"))
                 DiscNick = await UpdateNicknameAsync(RobloxName, member, RankBindsToAdd, CustomBindsToAdd, reason);
 
             return (AddedRoles, RemovedRoles, DiscNick);
         }
 
-        private async Task<string> UpdateNicknameAsync(string RobloxName, DiscordMember member, List<RankBind> RankBindsToAdd, List<CustomBind> CustomBindsToAdd, string reason)
+        private async Task<string> UpdateNicknameAsync(string RobloxName, DiscordMember member, List<RankBind> RankBindsToAdd, List<CustomBind> CustomBindsToAdd, string reason = "Update")
         {
             string DiscNick;
 
@@ -116,8 +116,10 @@ namespace RoWifi_Alpha.Models
             else if (Prefix.Equals("Disable", StringComparison.OrdinalIgnoreCase))
                 DiscNick = member.Nickname;
             else
-                DiscNick = Prefix + " " + RobloxName;   
-            if (member.Nickname != DiscNick)
+                DiscNick = Prefix + " " + RobloxName;
+            if (DiscNick != null && DiscNick.Length > 32)
+                throw new CommandException("Update Failed", $"Your supposed nickname `{DiscNick}` was found out to be more than 32 characters");
+            if (member.Nickname != DiscNick && DiscNick != null)
                 await member.ModifyAsync(m => { m.Nickname = DiscNick; m.AuditLogReason = reason; });
             return DiscNick;
         }

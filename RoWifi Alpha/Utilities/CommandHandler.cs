@@ -23,7 +23,7 @@ namespace RoWifi_Alpha.Utilities
         private readonly DatabaseService _database;
         private readonly LoggerService _logger;
 
-        private Dictionary<ulong, string> Prefixes;
+        public static Dictionary<ulong, string> Prefixes;
 
         public CommandHandler(DiscordClient client, CommandsNextExtension commands, LoggerService logger)
         {
@@ -72,14 +72,14 @@ namespace RoWifi_Alpha.Utilities
             _ = Task.Run(async () => await _commands.ExecuteCommandAsync(context));
         }
 
-        public string GetPrefix(ulong GuildId)
+        public static string GetPrefix(ulong GuildId)
         {
             bool Success = Prefixes.TryGetValue(GuildId, out string Prefix);
             if (!Success) Prefix = "!";
             return Prefix;
         }
 
-        public void SetPrefix(ulong GuildId, string Prefix)
+        public static void SetPrefix(ulong GuildId, string Prefix)
         {
             Prefixes[GuildId] = Prefix;
         }
@@ -99,6 +99,14 @@ namespace RoWifi_Alpha.Utilities
             else if (e.Exception is CommandException c)
             {
                 _ = await e.Context.RespondAsync(embed: c.Embed);
+            }
+            else if (e.Exception is CommandNotFoundException)
+            {
+                var content = "help";
+                await e.Context.RespondAsync("Invalid Command Usage. Activating help...");
+                var cmd = _commands.FindCommand(content, out var args);
+                var ctx = _commands.CreateFakeContext(e.Context.User, e.Context.Channel, content, e.Context.Prefix, cmd, args);
+                await _commands.ExecuteCommandAsync(ctx);
             }
             else if (e.Exception.GetBaseException() is ArgumentException)
             {
