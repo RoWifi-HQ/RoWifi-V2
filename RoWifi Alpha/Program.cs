@@ -28,7 +28,7 @@ namespace RoWifi_Alpha
                 {
                     x.ClearProviders();
                     x.AddConsole();
-                    x.SetMinimumLevel(LogLevel.Debug);
+                    x.SetMinimumLevel(LogLevel.Warning);
                 })
                 .ConfigureServices(services => 
                 {
@@ -39,7 +39,7 @@ namespace RoWifi_Alpha
                         AutoReconnect = true,
                         ShardId = int.Parse(Environment.GetEnvironmentVariable("SHARD").Split("-").LastOrDefault() ?? "0"),
                         ShardCount = int.Parse(Environment.GetEnvironmentVariable("TOTAL_SHARDS")),
-                        LogLevel = DSharpPlus.LogLevel.Debug,
+                        LogLevel = DSharpPlus.LogLevel.Error,
                         UseInternalLogHandler = true
                     };
                     services.AddSingleton(config);
@@ -55,7 +55,7 @@ namespace RoWifi_Alpha
                     deps.AddHttpClient<RobloxService>();
                     deps.AddHttpClient<PatreonService>();
 
-                    Client.UseCommandsNext(new CommandsNextConfiguration
+                    var Commands = Client.UseCommandsNext(new CommandsNextConfiguration
                     {
                         CaseSensitive = false,
                         DmHelp = false,
@@ -70,8 +70,8 @@ namespace RoWifi_Alpha
                         Timeout = TimeSpan.FromMinutes(1),
                         PaginationDeletion = PaginationDeletion.DeleteMessage
                     });
-                    var Commands = Client.GetCommandsNext();
                     Commands.RegisterCommands(typeof(UserAdmin).Assembly);
+                    Commands.SetHelpFormatter<HelpFormatter>();
 
                     services.AddSingleton(Client)
                         .AddSingleton(Commands)

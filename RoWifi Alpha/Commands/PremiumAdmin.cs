@@ -20,6 +20,26 @@ namespace RoWifi_Alpha.Commands
         public DatabaseService Database { get; set; }
         public PatreonService Patreon { get; set; }
 
+        [GroupCommand, RequireGuild, Description("Command to view premium status")]
+        public async Task PremiumAsync(CommandContext Context)
+        {
+            Premium premium = await Database.GetPremium(Context.User.Id);
+            DiscordEmbedBuilder embed = Miscellanous.GetDefaultEmbed()
+                .WithTitle(Context.User.Username + "#" + Context.User.Discriminator);
+            if (premium == null)
+            {
+                embed.AddField("Tier", "Normal")
+                    .AddField("Premium Features", "None");
+            }
+            else if (premium.PType == PremiumType.Alpha)
+                embed.AddField("Tier", "Alpha")
+                    .AddField("Premium Features", "Auto Detection for 1 server\nUpdate All (6 hours cooldown)");
+            else if (premium.PType == PremiumType.Beta)
+                embed.AddField("Tier", "Beta")
+                    .AddField("Premium Features", "Auto Detection for all owned servers\nUpdate All (6 hours cooldown)\nCustombinds\nBackups");
+            await Context.RespondAsync(embed: embed.Build());
+        }
+
         [Command("redeem"), RequireGuild]
         [Description("Command to enable premium features of a server")]
         public async Task RedeemAsync(CommandContext Context)
