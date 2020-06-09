@@ -124,7 +124,8 @@ namespace RoWifi_Alpha.Utilities
                     .WithTitle($"Error Id: {id}")
                     .WithDescription("There was an error in running this command. Please contact our support server for further information.");
                 await e.Context.RespondAsync(embed: embed.Build());
-                await _logger.LogDebug($"```Error Id: {id}\nCommand: {e.Context.Message}\nException:{e.Exception.GetType()}\nSource: {e.Exception.Source}\nMessage: {e.Exception.Message}\nMethod: {e.Exception.TargetSite}\nStack Trace: {e.Exception.StackTrace}```");
+                var Exception = e.Exception.GetBaseException();
+                await _logger.LogDebug($"```Error Id: {id}\nShard Id: {_client.ShardId}\nGuild: {e.Context.Guild.Id}\nCommand: {e.Context.Message}\nException:{Exception.GetType()}\nSource: {Exception.Source}\nMessage: {Exception.Message}\nStack Trace: {e.Exception.StackTrace}```");
             }
         }
 

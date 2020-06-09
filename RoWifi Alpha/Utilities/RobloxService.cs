@@ -12,12 +12,10 @@ namespace RoWifi_Alpha.Utilities
     public class RobloxService
     {
         private readonly HttpClient _client;
-        private readonly IMemoryCache _cache;
 
-        public RobloxService(HttpClient client, IMemoryCache cache)
+        public RobloxService(HttpClient client)
         {
             _client = client;
-            _cache = cache;
         }
         
         public async Task<int?> GetIdFromUsername(string Username)
@@ -77,20 +75,11 @@ namespace RoWifi_Alpha.Utilities
         {
             try
             {
-                if (!_cache.TryGetValue(RobloxId, out string Username))
-                {
-                    HttpResponseMessage response = await _client.GetAsync(new Uri($"https://api.roblox.com/users/{RobloxId}"));
-                    response.EnsureSuccessStatusCode();
-                    string result = await response.Content.ReadAsStringAsync();
-                    JObject obj = JObject.Parse(result);
-                    Username = (string)obj["Username"];
-                    if (Username != null && Username.Length > 0)
-                    {
-                        var cacheOptions = new MemoryCacheEntryOptions()
-                            .SetAbsoluteExpiration(TimeSpan.FromHours(6));
-                        _cache.Set(RobloxId, Username);
-                    }
-                }
+                HttpResponseMessage response = await _client.GetAsync(new Uri($"https://api.roblox.com/users/{RobloxId}"));
+                response.EnsureSuccessStatusCode();
+                string result = await response.Content.ReadAsStringAsync();
+                JObject obj = JObject.Parse(result);
+                string Username = (string)obj["Username"];
                 return Username;
             }
             catch(Exception e)
