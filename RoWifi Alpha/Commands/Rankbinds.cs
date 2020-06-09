@@ -20,7 +20,7 @@ namespace RoWifi_Alpha.Commands
 {
     [Group("rankbinds")]
     [Aliases("rb")]
-    [RequireBotPermissions(Permissions.EmbedLinks)]
+    [RequireBotPermissions(Permissions.EmbedLinks), RequireGuild, RequireRoWifiAdmin]
     [Description("Module to access rankbinds of a server")]
     public class Rankbinds : BaseCommandModule
     {
@@ -28,7 +28,7 @@ namespace RoWifi_Alpha.Commands
         public RobloxService Roblox { get; set; }
         public LoggerService Logger { get; set; }
 
-        [GroupCommand, RequireGuild, RequireRoWifiAdmin]
+        [GroupCommand]
         [Description("Command to view rankbinds of a server")]
         public async Task GroupCommand(CommandContext Context)
         {

@@ -16,14 +16,14 @@ using System.Threading.Tasks;
 namespace RoWifi_Alpha.Commands
 {
     [Group("groupbinds"), Aliases("gb")]
-    [RequireBotPermissions(Permissions.EmbedLinks)]
+    [RequireBotPermissions(Permissions.EmbedLinks), RequireGuild, RequireRoWifiAdmin]
     [Description("Module to access groupbinds of a server")]
     public class Groupbinds : BaseCommandModule
     {
         public DatabaseService Database { get; set; }
         public LoggerService Logger { get; set; }
 
-        [GroupCommand, RequireGuild, RequireRoWifiAdmin]
+        [GroupCommand]
         [Description("Command to view groupbinds of a server")]
         public async Task GroupCommand(CommandContext Context) 
         {

@@ -17,7 +17,7 @@ using System.Threading.Tasks;
 namespace RoWifi_Alpha.Commands
 {
     [Group("blacklists"), Aliases("blacklist", "bl")]
-    [RequireBotPermissions(Permissions.EmbedLinks)]
+    [RequireBotPermissions(Permissions.EmbedLinks), RequireGuild, RequireRoWifiAdmin]
     [Description("Module to blacklist users from a server")]
     public class Blacklists : BaseCommandModule
     {
@@ -25,7 +25,7 @@ namespace RoWifi_Alpha.Commands
         public RobloxService Roblox { get; set; }
         public LoggerService Logger { get; set; }
 
-        [GroupCommand, RequireGuild, RequireRoWifiAdmin]
+        [GroupCommand]
         [Description("View users blacklisted from the server")]
         public async Task GroupCommand(CommandContext Context)
         {
@@ -110,7 +110,7 @@ namespace RoWifi_Alpha.Commands
 
         [Command("custom"), RequireGuild, RequireRoWifiAdmin]
         [Description("Command to create your own blacklists")]
-        public async Task BlacklistCustomAsync(CommandContext Context, [RemainingText, Description("The custom code to define the blacklist")] string Code)
+        public async Task BlacklistCustomAsync(CommandContext Context, [RemainingText, Description("The custom code to define the blacklist")] string Code = "")
         {
             if (Code.Length == 0)
                 throw new CommandException("Blacklist Addition Failed", "The blacklist code should not empty");
