@@ -20,12 +20,13 @@ namespace RoWifi_Alpha.Models
 
         public async Task<(List<ulong>, List<ulong>, string)> UpdateAsync(RobloxService Roblox, DiscordGuild server, RoGuild guild, DiscordMember member, string reason = "Update")
         {
+            var Roles = member.Roles.ToList() ?? new List<DiscordRole>();
             DiscordRole VerificationRole = server.Roles.Values.Where(r => r != null).Where(r => r.Id == guild.VerificationRole).FirstOrDefault();
-            if (VerificationRole != null && member.Roles.Contains(VerificationRole))
+            if (VerificationRole != null && Roles.Contains(VerificationRole))
                 await member.RevokeRoleAsync(VerificationRole, reason);
 
             DiscordRole VerifiedRole = server.Roles.Values.Where(r => r != null).Where(r => r.Id == guild.VerifiedRole).FirstOrDefault();
-            if (VerifiedRole != null && !member.Roles.Contains(VerifiedRole))
+            if (VerifiedRole != null && !Roles.Contains(VerifiedRole))
                 await member.GrantRoleAsync(VerifiedRole, reason);
 
             Dictionary<int, int> userRoleIds = await Roblox.GetUserRoles(RobloxId);
@@ -87,8 +88,8 @@ namespace RoWifi_Alpha.Models
             }
 
             (List<ulong> AddedRoles, List<ulong> RemovedRoles) = await UpdateBindRolesAsync(member, server, guild, RankBindsToAdd, GroupBindsToAdd, CustomBindsToAdd, reason);
-            string DiscNick = member.Nickname ?? member.Username;
-            if (!member.Roles.ToList().Where(r => r != null).Any(r => r.Name == "RoWifi Nickname Bypass"))
+            string DiscNick = member.DisplayName;
+            if (!Roles.Where(r => r != null).Any(r => r.Name == "RoWifi Nickname Bypass"))
                 DiscNick = await UpdateNicknameAsync(RobloxName, member, RankBindsToAdd, CustomBindsToAdd, reason);
 
             return (AddedRoles, RemovedRoles, DiscNick);
@@ -96,12 +97,10 @@ namespace RoWifi_Alpha.Models
 
         private async Task<string> UpdateNicknameAsync(string RobloxName, DiscordMember member, List<RankBind> RankBindsToAdd, List<CustomBind> CustomBindsToAdd, string reason = "Update")
         {
-            string DiscNick;
-
             RankBind nickBind = RankBindsToAdd.OrderByDescending(b => b.Priority).FirstOrDefault();
             CustomBind custom = CustomBindsToAdd.OrderByDescending(b => b.Priority).FirstOrDefault();
 
-            string Prefix;
+            string Prefix = "N/A";
             if (nickBind == null && custom == null)
                 Prefix = "N/A";
             else if (nickBind == null)
@@ -111,15 +110,16 @@ namespace RoWifi_Alpha.Models
             else
                 Prefix = custom.Priority > nickBind.Priority ? custom.Prefix : nickBind.Prefix;
 
+            string DiscNick = member.DisplayName;
             if (Prefix.Equals("N/A", StringComparison.OrdinalIgnoreCase))
                 DiscNick = RobloxName;
             else if (Prefix.Equals("Disable", StringComparison.OrdinalIgnoreCase))
-                DiscNick = member.Nickname;
+                return DiscNick;
             else
                 DiscNick = Prefix + " " + RobloxName;
             if (DiscNick != null && DiscNick.Length > 32)
                 throw new CommandException("Update Failed", $"Your supposed nickname `{DiscNick}` was found out to be more than 32 characters");
-            if (member.Nickname != DiscNick && DiscNick != null)
+            if (DiscNick != null && member.DisplayName != DiscNick)
                 await member.ModifyAsync(m => { m.Nickname = DiscNick; m.AuditLogReason = reason; });
             return DiscNick;
         }
@@ -133,7 +133,7 @@ namespace RoWifi_Alpha.Models
             RolesToAdd.AddRange(GroupBindsToAdd.SelectMany(r => r.DiscordRoles));
             RolesToAdd.AddRange(CustomBindsToAdd.SelectMany(r => r.DiscordRoles));
 
-            List<DiscordRole> CurrentRoles = member.Roles.ToList();
+            List<DiscordRole> CurrentRoles = member.Roles.ToList() ?? new List<DiscordRole>();
 
             foreach (ulong BindRole in guild.GetUniqueRoles())
             {
@@ -175,5 +175,21 @@ namespace RoWifi_Alpha.Models
 
         [BsonElement("Servers")]
         public List<ulong> DiscordServers { get; set; }
+    }
+
+    public class QueueUser
+    {
+        [BsonId]
+        [BsonElement("RobloxId")]
+        public int RobloxId { get; set; }
+        
+        [BsonElement("DiscordId")]
+        public ulong DiscordId { get; set; }
+
+        /// <summary>
+        /// This field gives infomation whether the user is already verified or not
+        /// </summary>
+        [BsonElement("Verified")]
+        public bool Verified { get; set; }
     }
 }

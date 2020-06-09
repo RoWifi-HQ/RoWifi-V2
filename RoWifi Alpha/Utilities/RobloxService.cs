@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using Microsoft.Extensions.Caching.Memory;
+using Newtonsoft.Json.Linq;
 using RoWifi_Alpha.Exceptions;
 using System;
 using System.Collections.Generic;
@@ -11,10 +12,12 @@ namespace RoWifi_Alpha.Utilities
     public class RobloxService
     {
         private readonly HttpClient _client;
+        private readonly IMemoryCache _cache;
 
-        public RobloxService(HttpClient client)
+        public RobloxService(HttpClient client, IMemoryCache cache)
         {
             _client = client;
+            _cache = cache;
         }
         
         public async Task<int?> GetIdFromUsername(string Username)
@@ -74,10 +77,21 @@ namespace RoWifi_Alpha.Utilities
         {
             try
             {
-                HttpResponseMessage response = await _client.GetAsync(new Uri($"https://api.roblox.com/users/{RobloxId}"));
-                string result = response.Content.ReadAsStringAsync().Result;
-                JObject obj = JObject.Parse(result);
-                return (string)obj["Username"];
+                if (!_cache.TryGetValue(RobloxId, out string Username))
+                {
+                    HttpResponseMessage response = await _client.GetAsync(new Uri($"https://api.roblox.com/users/{RobloxId}"));
+                    response.EnsureSuccessStatusCode();
+                    string result = await response.Content.ReadAsStringAsync();
+                    JObject obj = JObject.Parse(result);
+                    Username = (string)obj["Username"];
+                    if (Username != null && Username.Length > 0)
+                    {
+                        var cacheOptions = new MemoryCacheEntryOptions()
+                            .SetAbsoluteExpiration(TimeSpan.FromHours(6));
+                        _cache.Set(RobloxId, Username);
+                    }
+                }
+                return Username;
             }
             catch(Exception e)
             {

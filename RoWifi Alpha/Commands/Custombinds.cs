@@ -17,7 +17,7 @@ using System.Threading.Tasks;
 namespace RoWifi_Alpha.Commands
 {
     [Group("custombinds"), Aliases("cb")]
-    [RequireBotPermissions(Permissions.EmbedLinks)]
+    [RequireBotPermissions(Permissions.EmbedLinks), RequireGuild, RequireRoWifiAdmin]
     [Description("Module to access custombinds of a server")]
     public class Custombinds : BaseCommandModule
     {
@@ -25,7 +25,7 @@ namespace RoWifi_Alpha.Commands
         public RobloxService Roblox { get; set; }
         public LoggerService Logger { get; set; }
 
-        [GroupCommand, RequireGuild, RequireRoWifiAdmin]
+        [GroupCommand]
         [Description("Command to view the custombinds of a server")]
         public async Task GroupCommand(CommandContext Context)
         {
@@ -35,7 +35,7 @@ namespace RoWifi_Alpha.Commands
                 throw new CommandException("Bind Viewing Failed", "Server was not setup. Please ask the server owner to set up this server.");
             if (guild.Settings.Type != GuildType.Beta)
                 throw new CommandException("Bind Viewing Failed", "This module may only be used in Beta Tier Servers");
-            if (guild.CustomBinds.Count == 0)
+            if (guild.CustomBinds == null || guild.CustomBinds.Count == 0)
                 throw new CommandException("Bind Viewing Failed", "There were no custombinds found associated with this server. Perhaps you meant to use `custombinds new`");
             
             List<Page> pages = new List<Page>();
