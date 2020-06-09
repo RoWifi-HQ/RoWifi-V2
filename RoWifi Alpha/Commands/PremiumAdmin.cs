@@ -114,5 +114,27 @@ namespace RoWifi_Alpha.Commands
             embed.WithTitle("Premium Disable Successful").WithDescription($"Removed premium features from {Context.Guild.Name}");
             await Context.RespondAsync(embed: embed.Build());
         }
+
+        [Command("check"), RequireGuild, RequireOwner, Hidden]
+        public async Task CheckAsync(CommandContext Context)
+        {
+            List<Premium> AllPremium = await Database.GetAllPremium();
+            foreach (Premium p in AllPremium)
+            {
+                (string PatreonId, int? Tier) = await Patreon.GetPatron(p.DiscordId.ToString());
+                if (Tier == null)
+                {
+                    await Context.RespondAsync($"{p.DiscordId} {p.PatreonId} {p.PType} Deleted");
+                    foreach(ulong s in p.DiscordServers)
+                    {
+                        UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Set(g => g.Settings.AutoDetection, false)
+                                                    .Set(g => g.Settings.Type, GuildType.Normal)
+                                                    .Set(g => g.CustomBinds, new List<CustomBind>());
+                        await Database.ModifyGuild(s, update);
+                    }
+                    await Database.DeletePremium(p.DiscordId);
+                } 
+            }
+        }
     }
 }

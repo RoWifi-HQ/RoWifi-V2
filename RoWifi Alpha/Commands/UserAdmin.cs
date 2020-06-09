@@ -24,7 +24,9 @@ namespace RoWifi_Alpha.Commands
         [Command("verify"), RequireGuild]
         [RequireBotPermissions(Permissions.EmbedLinks)]
         [Description("Command to link Roblox Account to Discord Account")]
-        public async Task VerifyAsync(CommandContext Context, [Description("The Roblox Username to bind to the Discord Account")]string RobloxName = "")
+        public async Task VerifyAsync(CommandContext Context, 
+            [Description("The Roblox Username to bind to the Discord Account")]string RobloxName = "",
+            [Description("Option to do verification by. Choices: Code/Game")] string Option = "")
         {
             var interactivity = Context.Client.GetInteractivity();
             DiscordEmbedBuilder embed = Miscellanous.GetDefaultEmbed();
@@ -35,7 +37,7 @@ namespace RoWifi_Alpha.Commands
             if (RobloxName.Length == 0)
             {
                 await Context.RespondAsync("Enter your Roblox Name.\nSay `cancel` if you wish to cancel this command");
-                var response = await interactivity.WaitForMessageAsync(xm => xm.Author.Id == Context.User.Id);
+                var response = await interactivity.WaitForMessageAsync(xm => xm.Author.Id == Context.User.Id, TimeSpan.FromMinutes(5));
                 if (response.TimedOut)
                     throw new CommandException("Verification Failed", "Command timed out. Please try again");
                 if (response.Result.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase))
@@ -47,39 +49,66 @@ namespace RoWifi_Alpha.Commands
             if (RobloxId == null)
                 throw new CommandException("Verification Failed", "Invalid Roblox Username. Please try again");
 
-            string Code = Miscellanous.GenerateCode();
-            embed.AddField("Verification Process", "Enter the following code in your Roblox status/description")
-                .AddField("Code", Code)
-                .AddField("Further Instructions", "After doing so, reply to me saying 'done'.");
-            await Context.RespondAsync(embed: embed.Build());
-
-            var response2 = await interactivity.WaitForMessageAsync(xm => xm.Author.Id == Context.User.Id && (xm.Content.Equals("done", StringComparison.OrdinalIgnoreCase) || xm.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase)));
-            if(response2.TimedOut)
-                throw new CommandException("Verification Failed", "Command timed out. Please try again");
-            if (response2.Result.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase))
-                throw new CommandException("Verification Failed", "Command has been cancelled");
-            bool Present = await Roblox.CheckCode(RobloxId.Value, Code);
-
-            if(Present)
+            if (Option.Length == 0)
             {
-                RoUser newUser = new RoUser { DiscordId = Context.User.Id, RobloxId = RobloxId.Value };
-                RoGuild guild = await Database.GetGuild(Context.Guild.Id);
-                await Database.AddUser(newUser);
-                embed = Miscellanous.GetDefaultEmbed();
-                embed.WithColor(DiscordColor.Green).WithTitle("Verification Successful").WithDescription("To get your roles, run `update`. To change your linked Roblox Account, use `reverify`");
+                await Context.RespondAsync("Enter the type of verification you wish to perform\nOptions: `Code`, `Game`.\nSay `cancel` if you wish to cancel this command");
+                var response = await interactivity.WaitForMessageAsync(xm => xm.Author.Id == Context.User.Id, TimeSpan.FromMinutes(5));
+                if (response.TimedOut)
+                    throw new CommandException("Verification Failed", "Command timed out. Please try again");
+                if (response.Result.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase))
+                    throw new CommandException("Verification Failed", "Command has been cancelled");
+                Option = response.Result.Content;
+            }
+
+            if (Option.Equals("code", StringComparison.OrdinalIgnoreCase))
+            {
+                string Code = Miscellanous.GenerateCode();
+                embed.AddField("Verification Process", "Enter the following code in your Roblox status/description")
+                    .AddField("Code", Code)
+                    .AddField("Further Instructions", "After doing so, reply to me saying 'done'.");
                 await Context.RespondAsync(embed: embed.Build());
 
-                if (guild.Settings.UpdateOnVerify)
-                    await UpdateAsync(Context);;
+                var response2 = await interactivity.WaitForMessageAsync(xm => xm.Author.Id == Context.User.Id && (xm.Content.Equals("done", StringComparison.OrdinalIgnoreCase) || xm.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase)));
+                if (response2.TimedOut)
+                    throw new CommandException("Verification Failed", "Command timed out. Please try again");
+                if (response2.Result.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase))
+                    throw new CommandException("Verification Failed", "Command has been cancelled");
+                bool Present = await Roblox.CheckCode(RobloxId.Value, Code);
+
+                if (Present)
+                {
+                    RoUser newUser = new RoUser { DiscordId = Context.User.Id, RobloxId = RobloxId.Value };
+                    RoGuild guild = await Database.GetGuild(Context.Guild.Id);
+                    await Database.AddUser(newUser);
+                    embed = Miscellanous.GetDefaultEmbed();
+                    embed.WithColor(DiscordColor.Green).WithTitle("Verification Successful").WithDescription("To get your roles, run `update`. To change your linked Roblox Account, use `reverify`");
+                    await Context.RespondAsync(embed: embed.Build());
+
+                    if (guild != null && guild.Settings.UpdateOnVerify)
+                        await UpdateAsync(Context);
+                }
+                else
+                    throw new CommandException("Verification Failed", $"`{Code}` was not found in the profile. Please try again.");
+            }
+            else if (Option.Equals("game", StringComparison.OrdinalIgnoreCase))
+            {
+                string GameUrl = "https://www.roblox.com/games/5146847848/Verification-Center";
+                embed = Miscellanous.GetDefaultEmbed();
+                embed.AddField("Further Steps", $"Please join the following game to verify yourselves: [Click Here]({GameUrl})");
+                await Context.RespondAsync(embed: embed.Build());
+                QueueUser qUser = new QueueUser { RobloxId = RobloxId.Value, DiscordId = Context.User.Id, Verified = false };
+                await Database.AddQueueUser(qUser);
             }
             else
-                throw new CommandException("Verification Failed", $"`{Code}` was not found in the profile. Please try again.");
+                throw new CommandException("Verification Failed", "Invalid Option was selected");
         }
 
         [Command("reverify"), RequireGuild]
         [RequireBotPermissions(Permissions.EmbedLinks)]
         [Description("Command to change linked Roblox Account")]
-        public async Task ReverifyAsync(CommandContext Context, [Description("The Roblox Username to bind to the Discord Account")]string RobloxName = "")
+        public async Task ReverifyAsync(CommandContext Context, 
+            [Description("The Roblox Username to bind to the Discord Account")]string RobloxName = "",
+            [Description("Option to do verification by. Choices: Code/Game")] string Option = "")
         {
             var interactivity = Context.Client.GetInteractivity();
             RoUser user = await Database.GetUserAsync(Context.User.Id);
@@ -101,34 +130,57 @@ namespace RoWifi_Alpha.Commands
             if (RobloxId == null)
                 throw new CommandException("Verification Failed", "Invalid Roblox Username. Please try again");
 
-            string Code = Miscellanous.GenerateCode();
-            DiscordEmbedBuilder embed = Miscellanous.GetDefaultEmbed();
-            embed.AddField("Verification Process", "Enter the following code in your Roblox status/description")
-                .AddField("Code", Code)
-                .AddField("Further Instructions", "After doing so, reply to me saying 'done'.");
-            await Context.RespondAsync(embed: embed.Build());
-
-            var response2 = await interactivity.WaitForMessageAsync(xm => xm.Author.Id == Context.User.Id && (xm.Content.Equals("done", StringComparison.OrdinalIgnoreCase) || xm.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase)));
-            if (response2.TimedOut)
-                throw new CommandException("Verification Failed", "Command timed out. Please try again");
-            if (response2.Result.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase))
-                throw new CommandException("Verification Failed", "Command has been cancelled");
-            bool Present = await Roblox.CheckCode(RobloxId.Value, Code);
-
-            if (Present)
+            if (Option.Length == 0)
             {
-                RoUser newUser = new RoUser { DiscordId = Context.User.Id, RobloxId = RobloxId.Value };
-                RoGuild guild = await Database.GetGuild(Context.Guild.Id);
-                await Database.AddUser(newUser, false);
-                embed = Miscellanous.GetDefaultEmbed();
-                embed.WithColor(DiscordColor.Green).WithTitle("Verification Successful").WithDescription("To get your roles, run `update`. To change your linked Roblox Account, use `reverify`");
+                await Context.RespondAsync("Enter the type of verification you wish to perform\nOptions: `Code`, `Game`.\nSay `cancel` if you wish to cancel this command");
+                var response = await interactivity.WaitForMessageAsync(xm => xm.Author.Id == Context.User.Id, TimeSpan.FromMinutes(5));
+                if (response.TimedOut)
+                    throw new CommandException("Verification Failed", "Command timed out. Please try again");
+                if (response.Result.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase))
+                    throw new CommandException("Verification Failed", "Command has been cancelled");
+                Option = response.Result.Content;
+            }
+
+            if (Option.Equals("code", StringComparison.OrdinalIgnoreCase))
+            {
+                string Code = Miscellanous.GenerateCode();
+                DiscordEmbedBuilder embed = Miscellanous.GetDefaultEmbed();
+                embed.AddField("Verification Process", "Enter the following code in your Roblox status/description")
+                    .AddField("Code", Code)
+                    .AddField("Further Instructions", "After doing so, reply to me saying 'done'.");
                 await Context.RespondAsync(embed: embed.Build());
 
-                if (guild.Settings.UpdateOnVerify)
-                    await UpdateAsync(Context);
+                var response2 = await interactivity.WaitForMessageAsync(xm => xm.Author.Id == Context.User.Id && (xm.Content.Equals("done", StringComparison.OrdinalIgnoreCase) || xm.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase)));
+                if (response2.TimedOut)
+                    throw new CommandException("Verification Failed", "Command timed out. Please try again");
+                if (response2.Result.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase))
+                    throw new CommandException("Verification Failed", "Command has been cancelled");
+                bool Present = await Roblox.CheckCode(RobloxId.Value, Code);
+
+                if (Present)
+                {
+                    RoUser newUser = new RoUser { DiscordId = Context.User.Id, RobloxId = RobloxId.Value };
+                    RoGuild guild = await Database.GetGuild(Context.Guild.Id);
+                    await Database.AddUser(newUser, false);
+                    embed = Miscellanous.GetDefaultEmbed();
+                    embed.WithColor(DiscordColor.Green).WithTitle("Verification Successful").WithDescription("To get your roles, run `update`. To change your linked Roblox Account, use `reverify`");
+                    await Context.RespondAsync(embed: embed.Build());
+
+                    if (guild != null && guild.Settings.UpdateOnVerify)
+                        await UpdateAsync(Context);
+                }
+                else
+                    throw new CommandException("Verification Failed", $"`{Code}` was not found in the profile. Please try again.");
             }
-            else
-                throw new CommandException("Verification Failed", $"`{Code}` was not found in the profile. Please try again.");
+            else if (Option.Equals("game", StringComparison.OrdinalIgnoreCase))
+            {
+                string GameUrl = "https://www.roblox.com/games/5146847848/Verification-Center";
+                DiscordEmbedBuilder embed = Miscellanous.GetDefaultEmbed();
+                embed.AddField("Further Steps", $"Please join the following game to verify yourselves: [Click Here]({GameUrl})");
+                await Context.RespondAsync(embed: embed.Build());
+                QueueUser qUser = new QueueUser { RobloxId = RobloxId.Value, DiscordId = Context.User.Id, Verified = true };
+                await Database.AddQueueUser(qUser);
+            }
         }
 
         [Command("update"), RequireGuild, Aliases("getroles")]

@@ -18,6 +18,7 @@ namespace RoWifi_Alpha.Utilities
         private readonly IMongoCollection<RoGuild> _guilds;
         private readonly IMongoCollection<Premium> _premium;
         private readonly IMongoCollection<RoBackup> _backups;
+        private readonly IMongoCollection<QueueUser> _queue;
         private readonly IMemoryCache _cache;
 
         public DatabaseService(IMemoryCache cache)
@@ -28,6 +29,7 @@ namespace RoWifi_Alpha.Utilities
             _guilds = _database.GetCollection<RoGuild>("guilds");
             _premium = _database.GetCollection<Premium>("premium");
             _backups = _database.GetCollection<RoBackup>("backups");
+            _queue = _database.GetCollection<QueueUser>("queue");
             _cache = cache;
         }
 
@@ -83,6 +85,35 @@ namespace RoWifi_Alpha.Utilities
                 _cache.Set(user.DiscordId, user, cacheOptions);
             }
             catch (Exception e)
+            {
+                throw new RoMongoException(e.Message);
+            }
+        }
+
+        public async Task<QueueUser> GetQueueUser(int RobloxId)
+        {
+            try
+            {
+                IAsyncCursor<QueueUser> cursor = await _queue.FindAsync(b => b.RobloxId == RobloxId);
+                return cursor.FirstOrDefault();
+            }
+            catch (Exception e)
+            {
+                throw new RoMongoException(e.Message);
+            }
+        }
+
+        public async Task AddQueueUser(QueueUser user)
+        {
+            try
+            {
+                if (await GetQueueUser(user.RobloxId) == null)
+                    await _queue.InsertOneAsync(user);
+                else
+                    await _queue.FindOneAndReplaceAsync(f => f.RobloxId == user.RobloxId, user);
+                _cache.Remove(user.DiscordId);
+            }
+            catch(Exception e)
             {
                 throw new RoMongoException(e.Message);
             }
@@ -192,11 +223,37 @@ namespace RoWifi_Alpha.Utilities
             }
         }
 
+        public async Task<List<Premium>> GetAllPremium()
+        {
+            try
+            {
+                IAsyncCursor<Premium> cursor = await _premium.FindAsync(b => b.PatreonId != 0);
+                return cursor.ToList();
+            }
+            catch (Exception e)
+            {
+                throw new RoMongoException(e.Message);
+            }
+        }
+
         public async Task<bool> ModifyPremium(ulong DiscordId, UpdateDefinition<Premium> update)
         {
             try
             {
                 await _premium.FindOneAndUpdateAsync(u => u.DiscordId == DiscordId, update);
+                return true;
+            }
+            catch (Exception e)
+            {
+                throw new RoMongoException(e.Message);
+            }
+        }
+
+        public async Task<bool> DeletePremium(ulong DiscordId)
+        {
+            try
+            {
+                await _premium.DeleteOneAsync(p => p.DiscordId == DiscordId);
                 return true;
             }
             catch (Exception e)
