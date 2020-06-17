@@ -46,7 +46,9 @@ namespace RoWifi_Alpha.Utilities
                 return;
 
             var message = e.Message;
-            var cmdStart = message.GetStringPrefixLength(GetPrefix(e.Guild.Id));
+            var cmdStart = message.GetMentionPrefixLength(_client.CurrentUser);
+            if (cmdStart == -1)
+                cmdStart = message.GetStringPrefixLength(GetPrefix(e.Guild.Id));
             if (cmdStart == -1)
                 return;
 

@@ -1,9 +1,10 @@
-﻿using Microsoft.Extensions.Caching.Memory;
-using Newtonsoft.Json.Linq;
+﻿using Newtonsoft.Json.Linq;
+using Polly;
 using RoWifi_Alpha.Exceptions;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 
@@ -52,7 +53,11 @@ namespace RoWifi_Alpha.Utilities
         {
             try
             {
-                HttpResponseMessage response = await _client.GetAsync(new Uri($"https://groups.roblox.com/v2/users/{RobloxId}/groups/roles"));
+                var response = await Policy
+                    .HandleResult<HttpResponseMessage>(message => message.StatusCode == HttpStatusCode.TooManyRequests)
+                    .WaitAndRetryAsync(3, i => TimeSpan.FromSeconds(2))
+                    .ExecuteAsync(() => _client.GetAsync(new Uri($"https://groups.roblox.com/v2/users/{RobloxId}/groups/roles")));
+
                 response.EnsureSuccessStatusCode();
                 string result = await response.Content.ReadAsStringAsync();
                 JObject obj = JObject.Parse(result);
@@ -75,7 +80,11 @@ namespace RoWifi_Alpha.Utilities
         {
             try
             {
-                HttpResponseMessage response = await _client.GetAsync(new Uri($"https://api.roblox.com/users/{RobloxId}"));
+                var response = await Policy
+                    .HandleResult<HttpResponseMessage>(message => message.StatusCode == HttpStatusCode.TooManyRequests)
+                    .WaitAndRetryAsync(3, i => TimeSpan.FromSeconds(2))
+                    .ExecuteAsync(() => _client.GetAsync(new Uri($"https://api.roblox.com/users/{RobloxId}")));
+
                 response.EnsureSuccessStatusCode();
                 string result = await response.Content.ReadAsStringAsync();
                 JObject obj = JObject.Parse(result);
