@@ -21,7 +21,7 @@ namespace RoWifi_Alpha.Commands
         public RobloxService Roblox { get; set; }
         public LoggerService Logger { get; set; }
 
-        [Command("setup"), RequireGuild, RequireRoWifiAdmin]
+        [Command("setup"), RequireGuild, RequireRoWifiAdmin, NoSandbox]
         [Description("Command to start configuration of the server")]
         [RequireBotPermissions(Permissions.EmbedLinks)]
         [Aliases("reset")]

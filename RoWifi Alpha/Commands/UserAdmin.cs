@@ -245,6 +245,7 @@ namespace RoWifi_Alpha.Commands
             RoUser user = await Database.GetUserAsync(member.Id);
             if (user == null)
                 throw new CommandException("User Information Failed", "User was not verified. Please ask the user to verify.");
+            Premium premium = await Database.GetPremium(member.Id);
 
             string Username = await Roblox.GetUsernameFromId(user.RobloxId);
             DiscordEmbedBuilder embed = Miscellanous.GetDefaultEmbed();
@@ -253,7 +254,8 @@ namespace RoWifi_Alpha.Commands
                 .WithThumbnail($"http://www.roblox.com/Thumbs/Avatar.ashx?x=150&y=150&Format=Png&username={Username}")
                 .AddField("Username", Username)
                 .AddField("Roblox Id", user.RobloxId.ToString())
-                .AddField("Discord Id", user.DiscordId.ToString());
+                .AddField("Discord Id", user.DiscordId.ToString())
+                .AddField("Tier", premium?.PType.ToString() ?? "Basic");
             await Context.RespondAsync(embed: embed.Build());
         }
     }
