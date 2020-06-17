@@ -6,6 +6,7 @@ using MongoDB.Driver;
 using RoWifi_Alpha.Exceptions;
 using RoWifi_Alpha.Models;
 using RoWifi_Alpha.Utilities;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using PremiumType = RoWifi_Alpha.Models.PremiumType;
@@ -135,6 +136,21 @@ namespace RoWifi_Alpha.Commands
                     await Database.DeletePremium(p.DiscordId);
                 } 
             }
+        }
+
+        [Command("add"), RequireGuild, RequireOwner, Hidden]
+        public async Task AddAsync(CommandContext Context, ulong Id, int Type)
+        {
+            Premium premium = new Premium { DiscordId = Id, PatreonId = 1, PType = (PremiumType)Type, DiscordServers = new List<ulong>() };
+            try
+            {
+                await Database.AddPremium(premium);
+                await Context.RespondAsync($"Added {premium.PType} to {Id}");
+            }
+            catch(Exception)
+            {
+                await Context.RespondAsync($"Id already has premium");
+            } 
         }
     }
 }
