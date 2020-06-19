@@ -37,37 +37,41 @@ namespace RoWifi_Alpha.Services
             return Task.CompletedTask;
         }
 
-        private async Task OnMemberJoin(GuildMemberAddEventArgs arg)
+        private Task OnMemberJoin(GuildMemberAddEventArgs arg)
         {
-            RoGuild guild = await Database.GetGuild(arg.Guild.Id);
-            if (guild == null) return;
-            if (!guild.Settings.UpdateOnJoin) return;
-            RoUser user = await Database.GetUserAsync(arg.Member.Id);
-            if (user == null) return;
-            DiscordEmbedBuilder embed = Miscellanous.GetDefaultEmbed();
-            try
+            _ = Task.Run(async () =>
             {
-                (List<ulong> AddedRoles, List<ulong> RemovedRoles, string DiscNick) = await user.UpdateAsync(Roblox, arg.Guild, guild, arg.Member);
-                string AddStr = "";
-                foreach (ulong item in AddedRoles)
-                    AddStr += $"- <@&{item}>\n";
-                string RemoveStr = "";
-                foreach (ulong item in RemovedRoles)
-                    RemoveStr += $"- <@&{item}>\n";
+                RoGuild guild = await Database.GetGuild(arg.Guild.Id);
+                if (guild == null) return;
+                if (!guild.Settings.UpdateOnJoin) return;
+                RoUser user = await Database.GetUserAsync(arg.Member.Id);
+                if (user == null) return;
+                DiscordEmbedBuilder embed = Miscellanous.GetDefaultEmbed();
+                try
+                {
+                    (List<ulong> AddedRoles, List<ulong> RemovedRoles, string DiscNick) = await user.UpdateAsync(Roblox, arg.Guild, guild, arg.Member);
+                    string AddStr = "";
+                    foreach (ulong item in AddedRoles)
+                        AddStr += $"- <@&{item}>\n";
+                    string RemoveStr = "";
+                    foreach (ulong item in RemovedRoles)
+                        RemoveStr += $"- <@&{item}>\n";
 
-                AddStr = AddStr.Length == 0 ? "None" : AddStr;
-                RemoveStr = RemoveStr.Length == 0 ? "None" : RemoveStr;
-                DiscNick = DiscNick.Length == 0 ? "None" : DiscNick;
+                    AddStr = AddStr.Length == 0 ? "None" : AddStr;
+                    RemoveStr = RemoveStr.Length == 0 ? "None" : RemoveStr;
+                    DiscNick = DiscNick.Length == 0 ? "None" : DiscNick;
 
-                embed.AddField("Nickname", DiscNick)
-                     .AddField("Added Roles", AddStr)
-                     .AddField("Removed Roles", RemoveStr)
-                     .WithColor(DiscordColor.Green)
-                     .WithTitle("Update");
-                await Logger.LogServer(arg.Guild, embed.Build());
-            }
-            catch (BlacklistException) { }
-            catch (Exception) { }
+                    embed.AddField("Nickname", DiscNick)
+                         .AddField("Added Roles", AddStr)
+                         .AddField("Removed Roles", RemoveStr)
+                         .WithColor(DiscordColor.Green)
+                         .WithTitle("Update");
+                    await Logger.LogServer(arg.Guild, embed.Build());
+                }
+                catch (BlacklistException) { }
+                catch (Exception) { }
+            });
+            return Task.CompletedTask;
         }
 
         private async Task OnGuildLeave(GuildDeleteEventArgs arg)

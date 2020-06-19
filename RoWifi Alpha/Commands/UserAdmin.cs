@@ -94,7 +94,7 @@ namespace RoWifi_Alpha.Commands
             {
                 string GameUrl = "https://www.roblox.com/games/5146847848/Verification-Center";
                 embed = Miscellanous.GetDefaultEmbed();
-                embed.AddField("Further Steps", $"Please join the following game to verify yourselves: [Click Here]({GameUrl})");
+                embed.AddField("Further Steps", $"Please join the following game to verify yourself: [Click Here]({GameUrl})");
                 await Context.RespondAsync(embed: embed.Build());
                 QueueUser qUser = new QueueUser { RobloxId = RobloxId.Value, DiscordId = Context.User.Id, Verified = false };
                 await Database.AddQueueUser(qUser);
@@ -176,7 +176,7 @@ namespace RoWifi_Alpha.Commands
             {
                 string GameUrl = "https://www.roblox.com/games/5146847848/Verification-Center";
                 DiscordEmbedBuilder embed = Miscellanous.GetDefaultEmbed();
-                embed.AddField("Further Steps", $"Please join the following game to verify yourselves: [Click Here]({GameUrl})");
+                embed.AddField("Further Steps", $"Please join the following game to verify yourself: [Click Here]({GameUrl})");
                 await Context.RespondAsync(embed: embed.Build());
                 QueueUser qUser = new QueueUser { RobloxId = RobloxId.Value, DiscordId = Context.User.Id, Verified = true };
                 await Database.AddQueueUser(qUser);
