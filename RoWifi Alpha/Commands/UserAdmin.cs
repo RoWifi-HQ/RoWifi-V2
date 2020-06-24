@@ -195,7 +195,7 @@ namespace RoWifi_Alpha.Commands
             if(user == null)
                 throw new CommandException("Update Failed", "User was not verified. Please ask the user to verify.");
             if(member.Roles.Where(r => r != null).Any(r => r.Name == "RoWifi Bypass"))
-                throw new CommandException("Update Skipped", "`RoWifi Bypass` was found in the user roles. Update may not be performed in this user.");
+                throw new CommandException("Update Skipped", "`RoWifi Bypass` was found in the user roles. Update may not be performed on this user.");
             if (member.IsOwner)
                 throw new CommandException("Update Skipped", "Due to Discord limitations, we are unable to update the server owner");
 

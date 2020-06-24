@@ -100,7 +100,7 @@ namespace RoWifi_Alpha.Commands
             else if (option.Equals("on", StringComparison.OrdinalIgnoreCase))
             {
                 if (guild.DisabledChannels == null || !guild.DisabledChannels.Contains(Context.Channel.Id))
-                    throw new CommandException("Settings Modification Failed", "Commands have not been enabled in this channel");
+                    throw new CommandException("Settings Modification Failed", "Commands have not been disabled in this channel");
 
                 UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Pull(g => g.DisabledChannels, Context.Channel.Id);
                 await Database.ModifyGuild(Context.Guild.Id, update);
