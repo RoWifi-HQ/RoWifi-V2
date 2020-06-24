@@ -6,12 +6,13 @@ using RoWifi_Alpha.Attributes;
 using RoWifi_Alpha.Exceptions;
 using RoWifi_Alpha.Models;
 using RoWifi_Alpha.Utilities;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using PremiumType = RoWifi_Alpha.Models.PremiumType;
 
 namespace RoWifi_Alpha.Commands
 {
-    [Group("backup")]
+    [Group("backup"), Aliases("backups")]
     [RequireBotPermissions(Permissions.EmbedLinks)]
     [Description("Module to save and restore server binds in the database")]
     public class Backups : BaseCommandModule
@@ -20,9 +21,21 @@ namespace RoWifi_Alpha.Commands
 
         [GroupCommand, RequireGuild, RequireRoWifiAdmin]
         [Description("Command to view the saved backups")]
-        public async Task GroupCommand(CommandContext ctx)
+        public async Task GroupCommand(CommandContext Context)
         {
-            await ctx.RespondAsync("Command WIP");
+            Premium premium = await Database.GetPremium(Context.User.Id);
+            if (premium == null || premium.PType != PremiumType.Beta)
+                throw new CommandException("Backup Failed", "You must be a Beta Tier member to use this command");
+
+            DiscordEmbedBuilder embed = Miscellanous.GetDefaultEmbed().WithTitle("Backups");
+            List<RoBackup> Backups = await Database.GetBackups(Context.User.Id);
+            
+            foreach(RoBackup backup in Backups)
+            {
+                embed.AddField($"Name: {backup.Name}", $"Prefix: {backup.CommandPrefix}\nVerification: {backup.VerificationRole}\n" +
+                    $"Verified: {backup.VerifiedRole}\nRankbinds: {backup.Rankbinds.Count}\nGroupbinds: {backup.Groupbinds.Count}");
+            }
+            await Context.RespondAsync(embed: embed);
         }
 
         [Command("new"), RequireGuild, RequireRoWifiAdmin]
