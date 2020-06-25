@@ -57,12 +57,9 @@ namespace RoWifi_Alpha.Services
             });
         }
 
-        public async Task LogEvent(string text)
+        public async Task LogEvent(DiscordEmbed embed)
         {
-            await Main.ExecuteAsync(new DiscordWebhookBuilder
-            {
-                Content = text
-            });
+            await Main.ExecuteAsync(new DiscordWebhookBuilder().AddEmbed(embed));
         }
 
         public async Task LogPremium(string text)

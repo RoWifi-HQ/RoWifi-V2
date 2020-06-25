@@ -76,14 +76,18 @@ namespace RoWifi_Alpha.Services
 
         private async Task OnGuildLeave(GuildDeleteEventArgs arg)
         {
-            string text = $"Left Guild - {arg.Guild.Name}";
-            await Logger.LogEvent(text);
+            DiscordEmbedBuilder embed = Miscellanous.GetDefaultEmbed()
+                    .WithTitle("Guild Leave")
+                    .WithDescription($"Name: {arg.Guild.Name}\nServer Id: {arg.Guild.Id}\nOwner Id: {arg.Guild.Owner.Id}");
+            await Logger.LogEvent(embed.Build());
         }
 
         private async Task OnGuildJoin(GuildCreateEventArgs arg)
         {
-            string text = $"Joined Guild - {arg.Guild.Name}";
-            await Logger.LogEvent(text);
+            DiscordEmbedBuilder embed = Miscellanous.GetDefaultEmbed()
+                    .WithTitle("Guild Join")
+                    .WithDescription($"Name: {arg.Guild.Name}\nServer Id: {arg.Guild.Id}\nOwner Id: {arg.Guild.Owner.Id}");
+            await Logger.LogEvent(embed.Build());
         }
 
         public virtual Task StopAsync(CancellationToken cancellationToken) => Task.CompletedTask;
