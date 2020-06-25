@@ -197,7 +197,11 @@ namespace RoWifi_Alpha.Commands
             if(member.Roles.Where(r => r != null).Any(r => r.Name == "RoWifi Bypass"))
                 throw new CommandException("Update Skipped", "`RoWifi Bypass` was found in the user roles. Update may not be performed on this user.");
             if (member.IsOwner)
-                throw new CommandException("Update Skipped", "Due to Discord limitations, we are unable to update the server owner");
+                throw new CommandException("Update Skipped", "Due to Discord limitations, I am unable to update the server owner");
+            int botPosition = Context.Guild.CurrentMember.Roles.OrderByDescending(r => r.Position).FirstOrDefault().Position;
+            int memberPosition = Context.Member.Roles.OrderByDescending(r => r.Position).FirstOrDefault().Position;
+            if (botPosition <= memberPosition)
+                throw new CommandException("Update Skipped", "I cannot update users with a higher role than mine. Please move my role as high as possible.");
 
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)
