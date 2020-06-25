@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 namespace RoWifi_Alpha.Commands
 {
     [Group("groupbinds"), Aliases("gb")]
-    [RequireBotPermissions(Permissions.EmbedLinks), RequireGuild, RequireRoWifiAdmin]
+    [RequireBotPermissions(Permissions.EmbedLinks | Permissions.AddReactions), RequireGuild, RequireRoWifiAdmin]
     [Description("Module to access groupbinds of a server")]
     public class Groupbinds : BaseCommandModule
     {
@@ -64,6 +64,8 @@ namespace RoWifi_Alpha.Commands
                 throw new CommandException("Bind Addition Failed", $"A bind with {GroupId} as Group Id already exists");
             if (Roles.Length == 0)
                 throw new CommandException("Bind Addition Failed", "Atleast one role must be mentioned to create a groupbind");
+            if (Roles.Any(r => r.Id == Context.Guild.EveryoneRole.Id))
+                throw new CommandException("Bind Addition Failed", "You cannot use the `@everyone` role in a bind");
 
             GroupBind bind = new GroupBind { GroupId = GroupId, DiscordRoles = Roles.Select(r => r.Id).ToArray() };
             UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Push(g => g.GroupBinds, bind);
@@ -126,6 +128,8 @@ namespace RoWifi_Alpha.Commands
                 GroupBind bind = guild.GroupBinds.Where(r => r.GroupId == GroupId).FirstOrDefault();
                 if (bind == null)
                     throw new CommandException("Bind Modification Failed", "A bind with the given Group does not exist");
+                if (Roles.Any(r => r.Id == Context.Guild.EveryoneRole.Id))
+                    throw new CommandException("Bind Modification Failed", "You cannot use the `@everyone` role in a bind");
 
                 FilterDefinition<RoGuild> filter = Builders<RoGuild>.Filter.Where(g => g.GuildId == Context.Guild.Id && g.GroupBinds.Any(r => r.GroupId == GroupId));
                 UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.AddToSetEach(r => r.GroupBinds[-1].DiscordRoles, Roles.Select(r => r.Id));

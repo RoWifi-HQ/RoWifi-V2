@@ -20,7 +20,7 @@ namespace RoWifi_Alpha.Commands
 {
     [Group("rankbinds")]
     [Aliases("rb")]
-    [RequireBotPermissions(Permissions.EmbedLinks), RequireGuild, RequireRoWifiAdmin]
+    [RequireBotPermissions(Permissions.EmbedLinks | Permissions.AddReactions), RequireGuild, RequireRoWifiAdmin]
     [Description("Module to access rankbinds of a server")]
     public class Rankbinds : BaseCommandModule
     {
@@ -76,6 +76,8 @@ namespace RoWifi_Alpha.Commands
 
             if (guild.RankBinds.Exists(r => r.GroupId == GroupId && r.RbxRankId == RankId))
                 throw new CommandException("Bind Addition Failed", "A bind with the given Group and Rank already exists. Please use `rankbinds modify` to modify rankbinds");
+            if (Roles.Any(r => r.Id == Context.Guild.EveryoneRole.Id))
+                throw new CommandException("Bind Addition Failed", "You cannot use the `@everyone` role in a bind");
 
             JToken RankInfo = await Roblox.GetGroupRank(GroupId, RankId);
             if (RankInfo == null)
@@ -193,6 +195,8 @@ namespace RoWifi_Alpha.Commands
                 RankBind bind = guild.RankBinds.Where(r => r.GroupId == GroupId && r.RbxRankId == RankId).FirstOrDefault();
                 if (bind == null)
                     throw new CommandException("Bind Modification Failed", "A bind with the given Group and Rank does not exist");
+                if (Roles.Any(r => r.Id == Context.Guild.EveryoneRole.Id))
+                    throw new CommandException("Bind Modification Failed", "You cannot use the `@everyone` role in a bind");
 
                 FilterDefinition<RoGuild> filter = Builders<RoGuild>.Filter.Where(g => g.GuildId == Context.Guild.Id && g.RankBinds.Any(r => r.GroupId == GroupId && r.RbxRankId == RankId));
                 UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.AddToSetEach(r => r.RankBinds[-1].DiscordRoles, Roles.Select(r => r.Id));
@@ -274,6 +278,8 @@ namespace RoWifi_Alpha.Commands
             if (response.TimedOut || response.Result.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase))
                 throw new CommandException("Bind Addition Failed", "Command has been cancelled. Try again");
             var Roles = response.Result.MentionedRoles.ToArray();
+            if (Roles.Any(r => r.Id == Context.Guild.EveryoneRole.Id))
+                throw new CommandException("Bind Addition Failed", "You cannot use the `@everyone` role in a bind");
 
             RankBind bind = new RankBind { GroupId = GroupId, RbxRankId = RankId, RbxGrpRoleId = (int)RankInfo["id"], Prefix = Prefix, Priority = Priority, DiscordRoles = Roles.Select(r => r.Id).ToArray() };
             UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Push(r => r.RankBinds, bind);
@@ -326,6 +332,8 @@ namespace RoWifi_Alpha.Commands
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)
                 throw new CommandException("Bind Addition Failed", "Server was not setup. Please ask the server owner to set up this server.");
+            if (Roles.Any(r => r.Id == Context.Guild.EveryoneRole.Id))
+                throw new CommandException("Bind Addition Failed", "You cannot use the `@everyone` role in a bind");
 
             var Ranks = RankId.Split('-');
             if (Ranks.Length != 2)
