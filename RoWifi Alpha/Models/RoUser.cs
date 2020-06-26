@@ -20,13 +20,13 @@ namespace RoWifi_Alpha.Models
 
         public async Task<(List<ulong>, List<ulong>, string)> UpdateAsync(RobloxService Roblox, DiscordGuild server, RoGuild guild, DiscordMember member, string reason = "Update")
         {
-            var Roles = member.Roles.ToList() ?? new List<DiscordRole>();
-            DiscordRole VerificationRole = server.Roles.Values.Where(r => r != null).Where(r => r.Id == guild.VerificationRole).FirstOrDefault();
-            if (VerificationRole != null && Roles.Contains(VerificationRole))
+            List<DiscordRole> Roles = member.Roles.ToList() ?? new List<DiscordRole>();
+            bool VSuccess = server.Roles.TryGetValue(guild.VerificationRole, out DiscordRole VerificationRole);
+            if (VSuccess && Roles.Contains(VerificationRole))
                 await member.RevokeRoleAsync(VerificationRole, reason);
 
-            DiscordRole VerifiedRole = server.Roles.Values.Where(r => r != null).Where(r => r.Id == guild.VerifiedRole).FirstOrDefault();
-            if (VerifiedRole != null && !Roles.Contains(VerifiedRole))
+            VSuccess = server.Roles.TryGetValue(guild.VerifiedRole, out DiscordRole VerifiedRole);
+            if (VSuccess && !Roles.Contains(VerifiedRole))
                 await member.GrantRoleAsync(VerifiedRole, reason);
 
             Dictionary<int, int> userRoleIds = await Roblox.GetUserRoles(RobloxId);
