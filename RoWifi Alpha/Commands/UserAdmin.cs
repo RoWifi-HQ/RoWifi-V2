@@ -199,7 +199,7 @@ namespace RoWifi_Alpha.Commands
             if (member.IsOwner)
                 throw new CommandException("Update Skipped", "Due to Discord limitations, I am unable to update the server owner");
             int botPosition = Context.Guild.CurrentMember.Roles.OrderByDescending(r => r.Position).FirstOrDefault().Position;
-            int memberPosition = Context.Member.Roles.OrderByDescending(r => r.Position).FirstOrDefault().Position;
+            int memberPosition = Context.Member.Roles.OrderByDescending(r => r.Position).FirstOrDefault()?.Position ?? 0;
             if (botPosition <= memberPosition)
                 throw new CommandException("Update Skipped", "I cannot update users with a higher role than mine. Please move my role as high as possible.");
 
