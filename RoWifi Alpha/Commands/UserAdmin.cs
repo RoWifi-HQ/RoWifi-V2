@@ -94,7 +94,7 @@ namespace RoWifi_Alpha.Commands
             {
                 string GameUrl = "https://www.roblox.com/games/5146847848/Verification-Center";
                 embed = Miscellanous.GetDefaultEmbed();
-                embed.AddField("Further Steps", $"Please join the following game to verify yourselves: [Click Here]({GameUrl})");
+                embed.AddField("Further Steps", $"Please join the following game to verify yourself: [Click Here]({GameUrl})");
                 await Context.RespondAsync(embed: embed.Build());
                 QueueUser qUser = new QueueUser { RobloxId = RobloxId.Value, DiscordId = Context.User.Id, Verified = false };
                 await Database.AddQueueUser(qUser);
@@ -176,7 +176,7 @@ namespace RoWifi_Alpha.Commands
             {
                 string GameUrl = "https://www.roblox.com/games/5146847848/Verification-Center";
                 DiscordEmbedBuilder embed = Miscellanous.GetDefaultEmbed();
-                embed.AddField("Further Steps", $"Please join the following game to verify yourselves: [Click Here]({GameUrl})");
+                embed.AddField("Further Steps", $"Please join the following game to verify yourself: [Click Here]({GameUrl})");
                 await Context.RespondAsync(embed: embed.Build());
                 QueueUser qUser = new QueueUser { RobloxId = RobloxId.Value, DiscordId = Context.User.Id, Verified = true };
                 await Database.AddQueueUser(qUser);
@@ -195,9 +195,13 @@ namespace RoWifi_Alpha.Commands
             if(user == null)
                 throw new CommandException("Update Failed", "User was not verified. Please ask the user to verify.");
             if(member.Roles.Where(r => r != null).Any(r => r.Name == "RoWifi Bypass"))
-                throw new CommandException("Update Skipped", "`RoWifi Bypass` was found in the user roles. Update may not be performed in this user.");
+                throw new CommandException("Update Skipped", "`RoWifi Bypass` was found in the user roles. Update may not be performed on this user.");
             if (member.IsOwner)
-                throw new CommandException("Update Skipped", "Due to Discord limitations, we are unable to update the server owner");
+                throw new CommandException("Update Skipped", "Due to Discord limitations, I am unable to update the server owner");
+            int botPosition = Context.Guild.CurrentMember.Roles.OrderByDescending(r => r.Position).FirstOrDefault().Position;
+            int memberPosition = Context.Member.Roles.OrderByDescending(r => r.Position).FirstOrDefault().Position;
+            if (botPosition <= memberPosition)
+                throw new CommandException("Update Skipped", "I cannot update users with a higher role than mine. Please move my role as high as possible.");
 
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)

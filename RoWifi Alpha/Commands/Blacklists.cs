@@ -17,7 +17,7 @@ using System.Threading.Tasks;
 namespace RoWifi_Alpha.Commands
 {
     [Group("blacklists"), Aliases("blacklist", "bl")]
-    [RequireBotPermissions(Permissions.EmbedLinks), RequireGuild, RequireRoWifiAdmin]
+    [RequireBotPermissions(Permissions.EmbedLinks | Permissions.AddReactions), RequireGuild, RequireRoWifiAdmin]
     [Description("Module to blacklist users from a server")]
     public class Blacklists : BaseCommandModule
     {
@@ -44,7 +44,7 @@ namespace RoWifi_Alpha.Commands
             {
                 DiscordEmbedBuilder embed = Miscellanous.GetDefaultEmbed();
                 embed.WithTitle("Blacklists").WithDescription($"Page {Page}");
-                foreach (RoBlacklist blacklist in guild.Blacklists)
+                foreach (RoBlacklist blacklist in blacklists)
                 {
                     if (blacklist.Type == BlacklistType.Name)
                         embed.AddField($"Id: {blacklist.Id}", $"Type: Id\nReason: {blacklist.Reason}", true);
@@ -121,6 +121,8 @@ namespace RoWifi_Alpha.Commands
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)
                 throw new CommandException("Blacklist Addition Failed", "Server was not setup. Please ask the server owner to set up this server.");
+            if (guild.Settings.Type != GuildType.Beta)
+                throw new CommandException("Blacklist Addition Failed", "This subcommand may only be used in Beta Tier servers");
 
             try
             {

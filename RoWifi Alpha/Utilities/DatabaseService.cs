@@ -275,11 +275,27 @@ namespace RoWifi_Alpha.Utilities
             }
         }
 
+        public async Task<List<RoBackup>> GetBackups(ulong UserId)
+        {
+            try
+            {
+                IAsyncCursor<RoBackup> cursor = await _backups.FindAsync(b => b.UserId == UserId);
+                return cursor.ToList();
+            }
+            catch (Exception e)
+            {
+                throw new RoMongoException(e.Message);
+            }
+        }
+
         public async Task<bool> AddBackup(RoBackup backup, string Name)
         {
             try
             {
-                await _backups.InsertOneAsync(backup);
+                if (await GetBackup(backup.UserId, backup.Name) != null)
+                    await _backups.InsertOneAsync(backup);
+                else
+                    await _backups.FindOneAndReplaceAsync(b => b.UserId == backup.UserId && b.Name == Name, backup);
                 return true;
             }
             catch (Exception e)

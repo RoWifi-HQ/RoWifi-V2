@@ -17,7 +17,7 @@ using System.Threading.Tasks;
 namespace RoWifi_Alpha.Commands
 {
     [Group("custombinds"), Aliases("cb")]
-    [RequireBotPermissions(Permissions.EmbedLinks), RequireGuild, RequireRoWifiAdmin]
+    [RequireBotPermissions(Permissions.EmbedLinks | Permissions.AddReactions), RequireGuild, RequireRoWifiAdmin]
     [Description("Module to access custombinds of a server")]
     public class Custombinds : BaseCommandModule
     {
@@ -101,6 +101,8 @@ namespace RoWifi_Alpha.Commands
             if (response.TimedOut || response.Result.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase))
                 throw new CommandException("Bind Addition Failed", "Command has been cancelled");
             DiscordRole[] Roles = response.Result.MentionedRoles.ToArray();
+            if (Roles.Any(r => r.Id == Context.Guild.EveryoneRole.Id))
+                throw new CommandException("Bind Addition Failed", "You cannot use the `@everyone` role in a bind");
 
             int Id = 1;
             if (guild.CustomBinds != null && guild.CustomBinds.Count > 0)
@@ -261,6 +263,8 @@ namespace RoWifi_Alpha.Commands
                 CustomBind bind = guild.CustomBinds.Where(c => c.Id == Id).FirstOrDefault();
                 if (bind == null)
                     throw new CommandException("Bind Modification Failed", "A bind with the given Id does not exist");
+                if (Roles.Any(r => r.Id == Context.Guild.EveryoneRole.Id))
+                    throw new CommandException("Bind Modification Failed", "You cannot use the `@everyone` role in a bind");
 
                 FilterDefinition<RoGuild> filter = Builders<RoGuild>.Filter.Where(g => g.GuildId == Context.Guild.Id && g.CustomBinds.Any(r => r.Id == Id));
                 UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.PushEach(r => r.CustomBinds[-1].DiscordRoles, Roles.Select(r => r.Id));

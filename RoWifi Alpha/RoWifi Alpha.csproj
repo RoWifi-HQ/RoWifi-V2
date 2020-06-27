@@ -8,9 +8,9 @@
 
   <ItemGroup>
     <PackageReference Include="Coravel" Version="3.6.1" />
-    <PackageReference Include="DSharpPlus" Version="4.0.0-nightly-00706" />
-    <PackageReference Include="DSharpPlus.CommandsNext" Version="4.0.0-nightly-00706" />
-    <PackageReference Include="DSharpPlus.Interactivity" Version="4.0.0-nightly-00706" />
+    <PackageReference Include="DSharpPlus" Version="4.0.0-nightly-00707" />
+    <PackageReference Include="DSharpPlus.CommandsNext" Version="4.0.0-nightly-00707" />
+    <PackageReference Include="DSharpPlus.Interactivity" Version="4.0.0-nightly-00707" />
     <PackageReference Include="Google.Cloud.Logging.V2" Version="3.0.0" />
     <PackageReference Include="Google.Cloud.Monitoring.V3" Version="2.1.0" />
     <PackageReference Include="Google.Cloud.Translation.V2" Version="2.0.0" />

@@ -152,5 +152,27 @@ namespace RoWifi_Alpha.Commands
                 await Context.RespondAsync($"Id already has premium");
             } 
         }
+
+        [Command("delete"), RequireGuild, RequireOwner, Hidden]
+        public async Task DeleteAsync(CommandContext Context, ulong Id)
+        {
+            Premium premium = await Database.GetPremium(Id);
+            try
+            {
+                foreach (ulong s in premium.DiscordServers)
+                {
+                    UpdateDefinition<RoGuild> update = Builders<RoGuild>.Update.Set(g => g.Settings.AutoDetection, false)
+                                                .Set(g => g.Settings.Type, GuildType.Normal)
+                                                .Set(g => g.CustomBinds, new List<CustomBind>());
+                    await Database.ModifyGuild(s, update);
+                }
+                await Database.DeletePremium(Id);
+                await Context.RespondAsync($"Removed premium from {Id}");
+            }
+            catch (Exception)
+            {
+                await Context.RespondAsync($"Id does not have premium");
+            }
+        }
     }
 }
