@@ -121,8 +121,6 @@ namespace RoWifi_Alpha.Commands
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)
                 throw new CommandException("Blacklist Addition Failed", "Server was not setup. Please ask the server owner to set up this server.");
-            if (guild.Settings.Type != GuildType.Beta)
-                throw new CommandException("Blacklist Addition Failed", "This subcommand may only be used in Beta Tier servers");
 
             try
             {

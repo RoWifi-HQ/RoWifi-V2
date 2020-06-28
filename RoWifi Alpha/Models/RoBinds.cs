@@ -46,4 +46,18 @@ namespace RoWifi_Alpha.Models
             this.Cmd = new RoCommand(Code);
         }
     }
+
+    public class AssetBind
+    {
+        public ulong Id { get; set; }
+
+        public AssetType Type { get; set; }
+
+        public ulong[] DiscordRoles { get; set; }
+    }
+
+    public enum AssetType
+    {
+        Asset, Badge, Gamepass
+    }
 }

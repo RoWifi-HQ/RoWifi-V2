@@ -129,5 +129,21 @@ namespace RoWifi_Alpha.Utilities
                 throw new RobloxException(e.Message);
             }
         }
+
+        public async Task<bool> HasAsset(int UserId, ulong ItemId, string Type)
+        {
+            try
+            {
+                HttpResponseMessage response = await _client.GetAsync(new Uri($"https://inventory.roblox.com/v1/users/{UserId}/items/{Type.ToLower()}/{ItemId}"));
+                string result = await response.Content.ReadAsStringAsync();
+                JObject jobject = JObject.Parse(result);
+                JArray asset = (JArray)jobject["data"];
+                return asset.Count != 0;
+            }
+            catch(Exception e)
+            {
+                throw new RobloxException(e.Message);
+            }
+        }
     }
 }
