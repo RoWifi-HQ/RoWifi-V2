@@ -34,6 +34,7 @@ namespace RoWifi_Alpha.Models
             List<RankBind> RankBindsToAdd = new List<RankBind>();
             List<GroupBind> GroupBindsToAdd = new List<GroupBind>();
             List<CustomBind> CustomBindsToAdd = new List<CustomBind>();
+            List<AssetBind> AssetBindsToAdd = new List<AssetBind>();
 
             RoCommandUser CommandUser = new RoCommandUser(this, member, userRoleIds, RobloxName);
 
@@ -87,7 +88,17 @@ namespace RoWifi_Alpha.Models
                 }
             }
 
-            (List<ulong> AddedRoles, List<ulong> RemovedRoles) = await UpdateBindRolesAsync(member, server, guild, RankBindsToAdd, GroupBindsToAdd, CustomBindsToAdd, reason);
+            if (guild.AssetBinds != null)
+            {
+                foreach (AssetBind bind in guild.AssetBinds)
+                {
+                    bool Success = await Roblox.HasAsset(RobloxId, bind.Id, bind.Type.ToString());
+                    if (Success)
+                        AssetBindsToAdd.Add(bind);
+                }
+            }
+
+            (List<ulong> AddedRoles, List<ulong> RemovedRoles) = await UpdateBindRolesAsync(member, server, guild, RankBindsToAdd, GroupBindsToAdd, CustomBindsToAdd, AssetBindsToAdd, reason);
             string DiscNick = member.DisplayName;
             if (!Roles.Where(r => r != null).Any(r => r.Name == "RoWifi Nickname Bypass"))
                 DiscNick = await UpdateNicknameAsync(RobloxName, member, RankBindsToAdd, CustomBindsToAdd, reason);
@@ -124,7 +135,9 @@ namespace RoWifi_Alpha.Models
             return DiscNick;
         }
 
-        private async Task<(List<ulong> AddedRoles, List<ulong> RemovedRoles)> UpdateBindRolesAsync(DiscordMember member, DiscordGuild server, RoGuild guild, List<RankBind> RankBindsToAdd, List<GroupBind> GroupBindsToAdd, List<CustomBind> CustomBindsToAdd, string reason)
+        private async Task<(List<ulong> AddedRoles, List<ulong> RemovedRoles)> UpdateBindRolesAsync(DiscordMember member, DiscordGuild server,
+            RoGuild guild, List<RankBind> RankBindsToAdd, List<GroupBind> GroupBindsToAdd, 
+            List<CustomBind> CustomBindsToAdd, List<AssetBind> AssetBindsToAdd, string reason)
         {
             List<DiscordRole> AddedRoles = new List<DiscordRole>();
             List<DiscordRole> RemovedRoles = new List<DiscordRole>();
@@ -132,6 +145,7 @@ namespace RoWifi_Alpha.Models
             RolesToAdd.AddRange(RankBindsToAdd.SelectMany(r => r.DiscordRoles));
             RolesToAdd.AddRange(GroupBindsToAdd.SelectMany(r => r.DiscordRoles));
             RolesToAdd.AddRange(CustomBindsToAdd.SelectMany(r => r.DiscordRoles));
+            RolesToAdd.AddRange(AssetBindsToAdd.SelectMany(r => r.DiscordRoles));
 
             List<DiscordRole> CurrentRoles = member.Roles.ToList() ?? new List<DiscordRole>();
 

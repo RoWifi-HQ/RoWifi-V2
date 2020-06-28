@@ -33,8 +33,6 @@ namespace RoWifi_Alpha.Commands
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)
                 throw new CommandException("Bind Viewing Failed", "Server was not setup. Please ask the server owner to set up this server.");
-            if (guild.Settings.Type != GuildType.Beta)
-                throw new CommandException("Bind Viewing Failed", "This module may only be used in Beta Tier Servers");
             if (guild.CustomBinds == null || guild.CustomBinds.Count == 0)
                 throw new CommandException("Bind Viewing Failed", "There were no custombinds found associated with this server. Perhaps you meant to use `custombinds new`");
             
@@ -67,8 +65,6 @@ namespace RoWifi_Alpha.Commands
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)
                 throw new CommandException("Bind Addition Failed", "Server was not setup. Please ask the server owner to set up this server.");
-            if (guild.Settings.Type != GuildType.Beta)
-                throw new CommandException("Bind Addition Failed", "This module may only be used on Beta Tier servers");
             try
             {
                 RoCommand cmd = new RoCommand(Code);
@@ -129,8 +125,6 @@ namespace RoWifi_Alpha.Commands
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)
                 throw new CommandException("Bind Deletion Failed", "Server was not setup. Please ask the server owner to set up this server.");
-            if (guild.Settings.Type != GuildType.Beta)
-                throw new CommandException("Bind Deletion Failed", "This module may only be used on Beta Tier servers");
             if (guild.CustomBinds == null || guild.CustomBinds.Count == 0)
                 throw new CommandException("Bind Deletion Failed", "This server has no custombinds to delete");
 
@@ -173,8 +167,6 @@ namespace RoWifi_Alpha.Commands
                 RoGuild guild = await Database.GetGuild(Context.Guild.Id);
                 if (guild == null)
                     throw new CommandException("Bind Modification Failed", "Server was not setup. Please ask the server owner to set up this server.");
-                if (guild.Settings.Type != GuildType.Beta)
-                    throw new CommandException("Bind Modification Failed", "This module may only be used on Beta Tier servers");
                 CustomBind Bind = guild.CustomBinds.Where(c => c.Id == Id).FirstOrDefault();
                 if (Bind == null)
                     throw new CommandException("Bind Modification Failed", "A bind with the given Id does not exist");
@@ -196,8 +188,6 @@ namespace RoWifi_Alpha.Commands
                 RoGuild guild = await Database.GetGuild(Context.Guild.Id);
                 if (guild == null)
                     throw new CommandException("Bind Modification Failed", "Server was not setup. Please ask the server owner to set up this server.");
-                if (guild.Settings.Type != GuildType.Beta)
-                    throw new CommandException("Bind Modification Failed", "This module may only be used on Beta Tier servers");
                 CustomBind Bind = guild.CustomBinds.Where(c => c.Id == Id).FirstOrDefault();
                 if (Bind == null)
                     throw new CommandException("Bind Modification Failed", "A bind with the given Id does not exist");
@@ -219,8 +209,6 @@ namespace RoWifi_Alpha.Commands
                 RoGuild guild = await Database.GetGuild(Context.Guild.Id);
                 if (guild == null)
                     throw new CommandException("Bind Modification Failed", "Server was not setup. Please ask the server owner to set up this server.");
-                if (guild.Settings.Type != GuildType.Beta)
-                    throw new CommandException("Bind Modification Failed", "This module may only be used on Beta Tier servers");
                 CustomBind bind = guild.CustomBinds.Where(c => c.Id == Id).FirstOrDefault();
                 if (bind == null)
                     throw new CommandException("Bind Modification Failed", "A bind with the given Id does not exist");
@@ -258,8 +246,6 @@ namespace RoWifi_Alpha.Commands
                 RoGuild guild = await Database.GetGuild(Context.Guild.Id);
                 if (guild == null)
                     throw new CommandException("Bind Modification Failed", "Server was not setup. Please ask the server owner to set up this server.");
-                if (guild.Settings.Type != GuildType.Beta)
-                    throw new CommandException("Bind Modification Failed", "This module may only be used on Beta Tier servers");
                 CustomBind bind = guild.CustomBinds.Where(c => c.Id == Id).FirstOrDefault();
                 if (bind == null)
                     throw new CommandException("Bind Modification Failed", "A bind with the given Id does not exist");
@@ -283,8 +269,6 @@ namespace RoWifi_Alpha.Commands
                 RoGuild guild = await Database.GetGuild(Context.Guild.Id);
                 if (guild == null)
                     throw new CommandException("Bind Modification Failed", "Server was not setup. Please ask the server owner to set up this server.");
-                if (guild.Settings.Type != GuildType.Beta)
-                    throw new CommandException("Bind Modification Failed", "This module may only be used on Beta Tier servers");
                 CustomBind bind = guild.CustomBinds.Where(c => c.Id == Id).FirstOrDefault();
                 if (bind == null)
                     throw new CommandException("Bind Modification Failed", "A bind with the given Id does not exist");

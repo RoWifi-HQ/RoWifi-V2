@@ -47,8 +47,14 @@ namespace RoWifi_Alpha.Models
         [BsonElement("GroupBinds")]
         public List<GroupBind> GroupBinds { get; set; }
 
+        /// <summary>
+        /// The List of Custombinds linked to this Guild
+        /// </summary>
         [BsonElement("CustomBinds")]
         public List<CustomBind> CustomBinds { get; set; }
+
+        [BsonElement("AssetBinds")]
+        public List<AssetBind> AssetBinds { get; set; }
 
         /// <summary>
         /// Object holding blacklists of the server
@@ -80,6 +86,8 @@ namespace RoWifi_Alpha.Models
             AllBindsEnumerable.AddRange(GroupBinds.Select(r => r.DiscordRoles));
             if (CustomBinds != null)
                 AllBindsEnumerable.AddRange(CustomBinds.Select(r => r.DiscordRoles));
+            if (AssetBinds != null)
+                AllBindsEnumerable.AddRange(AssetBinds.Select(r => r.DiscordRoles));
             List<ulong> AllRoles = new List<ulong>();
             foreach (ulong[] Binds in AllBindsEnumerable)
                 AllRoles.AddRange(Binds);

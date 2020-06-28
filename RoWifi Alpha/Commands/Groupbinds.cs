@@ -84,7 +84,7 @@ namespace RoWifi_Alpha.Commands
         {
             RoGuild guild = await Database.GetGuild(Context.Guild.Id);
             if (guild == null)
-                throw new CommandException("Bind Addition Failed", "Please ask the server owner to set up this server.");
+                throw new CommandException("Bind Deletion Failed", "Please ask the server owner to set up this server.");
 
             GroupBind bind = guild.GroupBinds.Where(r => r.GroupId == GroupId).FirstOrDefault();
             if (bind == null)
