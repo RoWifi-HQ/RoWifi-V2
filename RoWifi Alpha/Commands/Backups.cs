@@ -33,7 +33,8 @@ namespace RoWifi_Alpha.Commands
             foreach(RoBackup backup in Backups)
             {
                 embed.AddField($"Name: {backup.Name}", $"Prefix: {backup.CommandPrefix}\nVerification: {backup.VerificationRole}\n" +
-                    $"Verified: {backup.VerifiedRole}\nRankbinds: {backup.Rankbinds.Count}\nGroupbinds: {backup.Groupbinds.Count}");
+                    $"Verified: {backup.VerifiedRole}\nRankbinds: {backup.Rankbinds.Count}\nGroupbinds: {backup.Groupbinds.Count}\n" +
+                    $"Custombinds: {backup.Custombinds?.Count ?? 0}\n Assetbinds: {backup.Assetbinds?.Count ?? 0}");
             }
             await Context.RespondAsync(embed: embed);
         }
