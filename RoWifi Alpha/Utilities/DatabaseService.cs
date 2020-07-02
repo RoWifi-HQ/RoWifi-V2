@@ -292,7 +292,7 @@ namespace RoWifi_Alpha.Utilities
         {
             try
             {
-                if (await GetBackup(backup.UserId, backup.Name) != null)
+                if (await GetBackup(backup.UserId, backup.Name) == null)
                     await _backups.InsertOneAsync(backup);
                 else
                     await _backups.FindOneAndReplaceAsync(b => b.UserId == backup.UserId && b.Name == Name, backup);

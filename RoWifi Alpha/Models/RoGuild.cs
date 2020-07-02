@@ -76,6 +76,7 @@ namespace RoWifi_Alpha.Models
             GroupBinds = new List<GroupBind>();
             Blacklists = new List<RoBlacklist>();
             CustomBinds = new List<CustomBind>();
+            AssetBinds = new List<AssetBind>();
             DisabledChannels = new List<ulong>();
             CommandPrefix = "!";
         }

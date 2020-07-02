@@ -278,7 +278,7 @@ namespace RoWifi_Alpha.Commands
             if (response.TimedOut || response.Result.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase))
                 throw new CommandException("Bind Addition Failed", "Command has been cancelled. Try again");
             var Roles = response.Result.MentionedRoles.ToArray();
-            if (Roles.Any(r => r.Id == Context.Guild.EveryoneRole.Id))
+            if (Roles != null && Roles.Any(r => r.Id == Context.Guild.EveryoneRole.Id))
                 throw new CommandException("Bind Addition Failed", "You cannot use the `@everyone` role in a bind");
 
             RankBind bind = new RankBind { GroupId = GroupId, RbxRankId = RankId, RbxGrpRoleId = (int)RankInfo["id"], Prefix = Prefix, Priority = Priority, DiscordRoles = Roles.Select(r => r.Id).ToArray() };
