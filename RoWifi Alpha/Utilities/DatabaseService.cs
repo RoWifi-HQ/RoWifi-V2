@@ -227,7 +227,7 @@ namespace RoWifi_Alpha.Utilities
         {
             try
             {
-                IAsyncCursor<Premium> cursor = await _premium.FindAsync(b => b.PatreonId != 0);
+                IAsyncCursor<Premium> cursor = await _premium.FindAsync(b => b.PatreonId > 1);
                 return cursor.ToList();
             }
             catch (Exception e)
