@@ -30,14 +30,14 @@ namespace RoWifi_Alpha.Commands
             if (premium == null)
             {
                 embed.AddField("Tier", "Normal")
-                    .AddField("Premium Features", "None");
+                    .AddField("Perks", "None");
             }
             else if (premium.PType == PremiumType.Alpha)
                 embed.AddField("Tier", "Alpha")
-                    .AddField("Premium Features", "Auto Detection for 1 server\nUpdate All (6 hours cooldown)");
+                    .AddField("Perks", "Auto Detection for 1 server\nUpdate All (6 hours cooldown)");
             else if (premium.PType == PremiumType.Beta)
                 embed.AddField("Tier", "Beta")
-                    .AddField("Premium Features", "Auto Detection for all owned servers\nUpdate All (6 hours cooldown)\nCustombinds\nBackups");
+                    .AddField("Perks", "Auto Detection for all owned servers\nUpdate All (6 hours cooldown)\nBackups");
             await Context.RespondAsync(embed: embed.Build());
         }
 

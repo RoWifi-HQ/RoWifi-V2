@@ -33,30 +33,32 @@ namespace RoWifi_Alpha.Utilities.RoLang
 
         public Func(Token oper, List<Literal> args, bool Flip)
         {
-            if (oper.type == TokenType.HAS_RANK && args.Count != 2)
+            if (oper.type == TokenType.HAS_RANK)
             {
-                bool Success = int.TryParse((string)args[0].value, out _);
+                if (args.Count != 2)
+                    throw new Exception("Expected only 2 arguments. {Group Id}, {Rank Id}");
+                bool Success = int.TryParse(args[0].value.ToString(), out _);
                 if (!Success) throw new Exception("Expected integer at arg Group Id");
-                Success = int.TryParse((string)args[1].value, out _);
+                Success = int.TryParse(args[1].value.ToString(), out _);
                 if (!Success) throw new Exception("Expected integer at arg Rank Id");
-
-                throw new Exception("Expected only 2 arguments. {Group Id}, {Rank Id}");
             }
-            else if (oper.type == TokenType.IS_IN_GROUP && args.Count != 1)
+            else if (oper.type == TokenType.IS_IN_GROUP)
             {
-                bool Success = int.TryParse((string)args[0].value, out _);
+                if (args.Count != 1)
+                    throw new Exception("Expected only 1 arguments. {Group Id}");
+                bool Success = int.TryParse(args[0].value.ToString(), out _);
                 if (!Success) throw new Exception("Expected integer at arg Group Id");
-                throw new Exception("Expected only 1 arguments. {Group Id}");
             }
             else if (oper.type == TokenType.WITH_STRING && args.Count != 1)
             {
                 throw new Exception("Expected only 1 argument. {Keyword}");
             }
-            else if (oper.type == TokenType.HAS_ROLE && args.Count != 1)
+            else if (oper.type == TokenType.HAS_ROLE)
             {
-                bool Success = ulong.TryParse((string)args[0].value, out _);
+                if (args.Count != 1)
+                    throw new Exception("Expected only 1 argument. {Role Id}");
+                bool Success = ulong.TryParse(args[0].value.ToString(), out _);
                 if (!Success) throw new Exception("Expected integer at arg Role Id");
-                throw new Exception("Expected only 1 argument. {Role Id}");
             }
             this.oper = oper;
             this.args = args;

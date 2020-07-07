@@ -39,6 +39,9 @@ namespace RoWifi_Alpha.Models
         [BsonElement("Custombinds")]
         public List<BCustomBind> Custombinds { get; set; }
 
+        [BsonElement("Assetbinds")]
+        public List<BAssetBind> Assetbinds { get; set; }
+
         [BsonElement("Blacklists")]
         public List<RoBlacklist> Blacklists { get; set; }
 
@@ -53,10 +56,9 @@ namespace RoWifi_Alpha.Models
             VerifiedRole = server.Roles.Values.Where(r => r != null).Where(r => r.Id == guild.VerifiedRole).Select(r => r.Name).FirstOrDefault();
             Rankbinds = guild.RankBinds.Select(r => new BRankBind(r, server)).ToList();
             Groupbinds = guild.GroupBinds.Select(g => new BGroupBind(g, server)).ToList();
-            if (guild.CustomBinds != null)
-                Custombinds = guild.CustomBinds.Select(g => new BCustomBind(g, server)).ToList();
-            if (guild.Blacklists != null)
-                Blacklists = guild.Blacklists;
+            Custombinds = guild.CustomBinds?.Select(g => new BCustomBind(g, server)).ToList() ?? new List<BCustomBind>();
+            Assetbinds = guild.AssetBinds?.Select(g => new BAssetBind(g, server)).ToList() ?? new List<BAssetBind>();
+            Blacklists = guild.Blacklists ?? new List<RoBlacklist>();
         }
 
         public async Task<RoGuild> RestoreAsync(DiscordGuild server)
@@ -78,8 +80,12 @@ namespace RoWifi_Alpha.Models
             //Restore Groupbinds
             foreach (BGroupBind bind in Groupbinds)
                 guild.GroupBinds.Add(await bind.RestoreAsync(server));
-            foreach (BCustomBind bind in Custombinds)
-                guild.CustomBinds.Add(await bind.RestoreAsync(server));
+            if (Custombinds != null)
+                foreach (BCustomBind bind in Custombinds)
+                    guild.CustomBinds.Add(await bind.RestoreAsync(server));
+            if (Assetbinds != null)
+                foreach (BAssetBind bind in Assetbinds)
+                    guild.AssetBinds.Add(await bind.RestoreAsync(server));
             guild.Blacklists = Blacklists;
             guild.Settings = Settings;
             guild.CommandPrefix = CommandPrefix;
@@ -121,7 +127,7 @@ namespace RoWifi_Alpha.Models
             {
                 DiscordRole role = server.Roles.Values.Where(r => r != null).Where(r => r.Name == RoleName).FirstOrDefault();
                 if (role == null)
-                    await server.CreateRoleAsync(RoleName, mentionable: false);
+                    role = await server.CreateRoleAsync(RoleName, mentionable: false);
                 roles.Add(role);
             }
             bind.DiscordRoles = roles.Select(r => r.Id).ToArray();
@@ -184,6 +190,36 @@ namespace RoWifi_Alpha.Models
                 roles.Add(role);
             }
             CustomBind bind = new CustomBind(Id, Code, Prefix, Priority, roles.Select(r => r.Id).ToArray());
+            return bind;
+        }
+    }
+
+    public class BAssetBind
+    {
+        public ulong Id { get; set; }
+
+        public AssetType Type { get; set; }
+
+        public string[] DiscordRoles { get; set; }
+
+        public BAssetBind(AssetBind bind, DiscordGuild server)
+        {
+            Id = bind.Id;
+            DiscordRoles = server.Roles.Values.Where(r => r != null).Where(r => bind.DiscordRoles.Contains(r.Id)).Select(r => r.Name).ToArray();
+        }
+
+        public async Task<AssetBind> RestoreAsync(DiscordGuild server)
+        {
+            AssetBind bind = new AssetBind { Id = Id };
+            List<DiscordRole> roles = new List<DiscordRole>();
+            foreach (string roleName in DiscordRoles)
+            {
+                DiscordRole role = server.Roles.Values.Where(r => r != null).Where(r => r.Name == roleName).FirstOrDefault();
+                if (role == null)
+                    role = await server.CreateRoleAsync(roleName, mentionable: false);
+                roles.Add(role);
+            }
+            bind.DiscordRoles = roles.Select(r => r.Id).ToArray();
             return bind;
         }
     }

@@ -51,7 +51,6 @@ namespace RoWifi_Alpha.Commands
                 await Context.RespondAsync(embed: pages[0].Embed);
             else
                 await interactivity.SendPaginatedMessageAsync(Context.Channel, Context.User, pages);
-
         }
 
         [Command("new"), RequireGuild, RequireRoWifiAdmin]

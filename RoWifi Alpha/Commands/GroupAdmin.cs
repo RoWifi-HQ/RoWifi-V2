@@ -89,7 +89,9 @@ namespace RoWifi_Alpha.Commands
                 .AddField("Verification Role", $"<@&{guild.VerificationRole}>", true)
                 .AddField("Verified Role", $"<@&{guild.VerifiedRole}>", true)
                 .AddField("Rankbinds", $"{guild.RankBinds.Count}", true)
-                .AddField("Groupbinds", $"{guild.GroupBinds.Count}", true);
+                .AddField("Groupbinds", $"{guild.GroupBinds.Count}", true)
+                .AddField("Custombinds", $"{guild.CustomBinds?.Count ?? 0}", true)
+                .AddField("Assetbinds", $"{guild.AssetBinds?.Count ?? 0}", true);
             await Context.RespondAsync(embed: embed.Build());
         }
 
