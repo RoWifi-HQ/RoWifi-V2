@@ -233,9 +233,9 @@ namespace RoWifi_Alpha.Commands
             {
                 throw new CommandException("Update Failed", "We were unable to give you one or more roles since they seem to present above the bot's role"); ;
             }
-            catch(BlacklistException)
+            catch(BlacklistException bl)
             {
-                throw new CommandException("Update Failed", "User was found on the server blacklist");
+                throw new CommandException("Update Failed", bl.Message == "N/A" ? bl.Message : "User was found on the server blacklist");
             }
         }
 

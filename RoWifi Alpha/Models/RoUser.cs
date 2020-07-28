@@ -46,7 +46,7 @@ namespace RoWifi_Alpha.Models
                     try
                     {
                         DiscordDmChannel Channel = await member.CreateDmChannelAsync();
-                        await Channel.SendMessageAsync($"You were found on the server blacklist in {server.Name}. Reason: {Success.Reason}");
+                        await Channel.SendMessageAsync($"{Success.Reason}");
                     }
                     catch (Exception) { }
                     try 
