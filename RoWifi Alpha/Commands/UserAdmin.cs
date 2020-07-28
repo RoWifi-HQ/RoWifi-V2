@@ -68,7 +68,7 @@ namespace RoWifi_Alpha.Commands
                     .AddField("Further Instructions", "After doing so, reply to me saying 'done'.");
                 await Context.RespondAsync(embed: embed.Build());
 
-                var response2 = await interactivity.WaitForMessageAsync(xm => xm.Author.Id == Context.User.Id && (xm.Content.Equals("done", StringComparison.OrdinalIgnoreCase) || xm.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase)));
+                var response2 = await interactivity.WaitForMessageAsync(xm => xm.Author.Id == Context.User.Id && (xm.Content.Equals("done", StringComparison.OrdinalIgnoreCase) || xm.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase)), TimeSpan.FromMinutes(5));
                 if (response2.TimedOut)
                     throw new CommandException("Verification Failed", "Command timed out. Please try again");
                 if (response2.Result.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase))
@@ -118,7 +118,7 @@ namespace RoWifi_Alpha.Commands
             if (RobloxName.Length == 0)
             {
                 await Context.RespondAsync("Enter your Roblox Name.\nSay `cancel` if you wish to cancel this command");
-                var response = await interactivity.WaitForMessageAsync(xm => xm.Author.Id == Context.User.Id);
+                var response = await interactivity.WaitForMessageAsync(xm => xm.Author.Id == Context.User.Id, TimeSpan.FromMinutes(5));
                 if (response.TimedOut)
                     throw new CommandException("Verification Failed", "Command timed out. Please try again");
                 if (response.Result.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase))
@@ -150,7 +150,7 @@ namespace RoWifi_Alpha.Commands
                     .AddField("Further Instructions", "After doing so, reply to me saying 'done'.");
                 await Context.RespondAsync(embed: embed.Build());
 
-                var response2 = await interactivity.WaitForMessageAsync(xm => xm.Author.Id == Context.User.Id && (xm.Content.Equals("done", StringComparison.OrdinalIgnoreCase) || xm.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase)));
+                var response2 = await interactivity.WaitForMessageAsync(xm => xm.Author.Id == Context.User.Id && (xm.Content.Equals("done", StringComparison.OrdinalIgnoreCase) || xm.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase)), TimeSpan.FromMinutes(5));
                 if (response2.TimedOut)
                     throw new CommandException("Verification Failed", "Command timed out. Please try again");
                 if (response2.Result.Content.Equals("cancel", StringComparison.OrdinalIgnoreCase))
@@ -233,9 +233,9 @@ namespace RoWifi_Alpha.Commands
             {
                 throw new CommandException("Update Failed", "We were unable to give you one or more roles since they seem to present above the bot's role"); ;
             }
-            catch(BlacklistException)
+            catch(BlacklistException bl)
             {
-                throw new CommandException("Update Failed", "User was found on the server blacklist");
+                throw new CommandException("Update Failed", bl.Message == "N/A" ? bl.Message : "User was found on the server blacklist");
             }
         }
 

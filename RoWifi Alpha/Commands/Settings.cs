@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 
 namespace RoWifi_Alpha.Commands
 {
-    [Group("settings")]
+    [Group("settings"), RequireGuild, RequireRoWifiAdmin]
     [RequireBotPermissions(Permissions.EmbedLinks)]
     [Description("Command to access settings of a server")]
     public class Settings : BaseCommandModule
@@ -22,7 +22,7 @@ namespace RoWifi_Alpha.Commands
         public DatabaseService Database { get; set; }
         public LoggerService Logger { get; set; }
 
-        [GroupCommand, RequireGuild, RequireRoWifiAdmin]
+        [GroupCommand]
         [Description("Command to view settings of a server")]
         public async Task GroupCommand(CommandContext Context)
         {

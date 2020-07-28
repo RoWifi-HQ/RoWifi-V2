@@ -16,7 +16,7 @@ namespace RoWifi_Alpha.Services
 {
     public class EventHandler : IHostedService
     {
-        private DiscordClient Client;
+        private readonly DiscordClient Client;
         private readonly LoggerService Logger;
         private readonly DatabaseService Database;
         private readonly RobloxService Roblox;
@@ -84,6 +84,10 @@ namespace RoWifi_Alpha.Services
 
         private async Task OnGuildJoin(GuildCreateEventArgs arg)
         {
+            string content = "Thank you for adding RoWifi! To get started, please set up your server using `!setup`" +
+                            "\n\nTo get more information about announcements & updates, please join our support server\nhttps://www.discord.gg/h4BGGyR" +
+                            "\n\nTo view our documentation, please visit our website\nhttps://rowifi.link";
+            try { await arg.Guild.GetDefaultChannel().SendMessageAsync(content); } catch(Exception) { }
             DiscordEmbedBuilder embed = Miscellanous.GetDefaultEmbed()
                     .WithTitle("Guild Join")
                     .WithDescription($"Name: {arg.Guild.Name}\nServer Id: {arg.Guild.Id}\nOwner Id: {arg.Guild.Owner.Id}");
