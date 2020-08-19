@@ -148,7 +148,7 @@ namespace RoWifi_Alpha.Commands
             });
         }
 
-        [Command("update-role"), RequireGuild, RequireRoWifiAdmin, Cooldown(1, 3 * 60 * 60, CooldownBucketType.Guild)]
+        [Command("update-role"), RequireGuild, RequireRoWifiAdmin, Cooldown(3, 12 * 60 * 60, CooldownBucketType.Guild)]
         [Description("Command to update all members with a specific role")]
         public async Task UpdateRoleAsync(CommandContext Context, DiscordRole Role)
         {
