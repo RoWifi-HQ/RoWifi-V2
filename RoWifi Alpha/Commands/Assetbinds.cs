@@ -17,7 +17,7 @@ using System.Threading.Tasks;
 namespace RoWifi_Alpha.Commands
 {
     [Group("assetbinds"), Aliases("ab")]
-    [RequireBotPermissions(Permissions.EmbedLinks | Permissions.AddReactions), RequireGuild, RequireRoWifiAdmin]
+    [RequireBotPermissions(Permissions.EmbedLinks | Permissions.AddReactions | Permissions.ManageMessages), RequireGuild, RequireRoWifiAdmin]
     [Description("Module to access assetbinds of a server")]
     public class Assetbinds : BaseCommandModule
     {

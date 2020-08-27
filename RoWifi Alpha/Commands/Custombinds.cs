@@ -17,7 +17,7 @@ using System.Threading.Tasks;
 namespace RoWifi_Alpha.Commands
 {
     [Group("custombinds"), Aliases("cb")]
-    [RequireBotPermissions(Permissions.EmbedLinks | Permissions.AddReactions), RequireGuild, RequireRoWifiAdmin]
+    [RequireBotPermissions(Permissions.EmbedLinks | Permissions.AddReactions | Permissions.ManageMessages), RequireGuild, RequireRoWifiAdmin]
     [Description("Module to access custombinds of a server")]
     public class Custombinds : BaseCommandModule
     {
