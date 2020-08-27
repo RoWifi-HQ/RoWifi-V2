@@ -20,7 +20,7 @@ namespace RoWifi_Alpha.Commands
 {
     [Group("rankbinds")]
     [Aliases("rb")]
-    [RequireBotPermissions(Permissions.EmbedLinks | Permissions.AddReactions), RequireGuild, RequireRoWifiAdmin]
+    [RequireBotPermissions(Permissions.EmbedLinks | Permissions.AddReactions | Permissions.ManageMessages), RequireGuild, RequireRoWifiAdmin]
     [Description("Module to access rankbinds of a server")]
     public class Rankbinds : BaseCommandModule
     {

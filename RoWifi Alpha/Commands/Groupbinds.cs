@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 namespace RoWifi_Alpha.Commands
 {
     [Group("groupbinds"), Aliases("gb")]
-    [RequireBotPermissions(Permissions.EmbedLinks | Permissions.AddReactions), RequireGuild, RequireRoWifiAdmin]
+    [RequireBotPermissions(Permissions.EmbedLinks | Permissions.AddReactions | Permissions.ManageMessages), RequireGuild, RequireRoWifiAdmin]
     [Description("Module to access groupbinds of a server")]
     public class Groupbinds : BaseCommandModule
     {
