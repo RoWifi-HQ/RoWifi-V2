@@ -39,8 +39,7 @@ namespace RoWifi_Alpha
                         AutoReconnect = true,
                         ShardId = int.Parse(Environment.GetEnvironmentVariable("SHARD").Split("-").LastOrDefault() ?? "0"),
                         ShardCount = int.Parse(Environment.GetEnvironmentVariable("TOTAL_SHARDS")),
-                        LogLevel = DSharpPlus.LogLevel.Error,
-                        UseInternalLogHandler = true
+                        MinimumLogLevel = LogLevel.Error
                     };
                     services.AddSingleton(config);
 

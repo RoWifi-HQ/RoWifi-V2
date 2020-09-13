@@ -95,7 +95,7 @@ namespace RoWifi_Alpha.Commands
             await Context.RespondAsync(embed: embed.Build());
         }
 
-        [Command("update-all"), RequireGuild, RequireRoWifiAdmin, Cooldown(1, 6 * 60 * 60, CooldownBucketType.Guild)]
+        [Command("update-all"), RequireGuild, RequireRoWifiAdmin, Cooldown(3, 12 * 60 * 60, CooldownBucketType.Guild)]
         [RequireBotPermissions(Permissions.EmbedLinks)]
         [Description("Command to update all verified users in a server")]
         public async Task UpdateAllAsync(CommandContext Context)
